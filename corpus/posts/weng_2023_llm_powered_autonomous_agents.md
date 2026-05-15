@@ -8,7 +8,8 @@ Retrieved: 2026-05-15
 
 Building agents with LLM (large language model) as its core controller is a cool concept. Several proof-of-concepts demos, such as [AutoGPT](https://github.com/Significant-Gravitas/Auto-GPT), [GPT-Engineer](https://github.com/AntonOsika/gpt-engineer) and [BabyAGI](https://github.com/yoheinakajima/babyagi), serve as inspiring examples. The potentiality of LLM extends beyond generating well-written copies, stories, essays and programs; it can be framed as a powerful general problem solver.
 
-# Agent System Overview[#](#agent-system-overview)
+# Agent System Overview#
+
 
 In a LLM-powered autonomous agent system, LLM functions as the agent’s brain, complemented by several key components:
 
@@ -22,11 +23,13 @@ In a LLM-powered autonomous agent system, LLM functions as the agent’s brain, 
 **Tool use**- The agent learns to call external APIs for extra information that is missing from the model weights (often hard to change after pre-training), including current information, code execution capability, access to proprietary information sources and more.
 
 
-# Component One: Planning[#](#component-one-planning)
+# Component One: Planning#
+
 
 A complicated task usually involves many steps. An agent needs to know what they are and plan ahead.
 
-## Task Decomposition[#](#task-decomposition)
+## Task Decomposition#
+
 
 [ Chain of thought](https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/#chain-of-thought-cot) (CoT;
 
@@ -44,7 +47,8 @@ for writing a novel, or (3) with human inputs.
 
 Another quite distinct approach, **LLM+P** ([Liu et al. 2023](https://arxiv.org/abs/2304.11477)), involves relying on an external classical planner to do long-horizon planning. This approach utilizes the Planning Domain Definition Language (PDDL) as an intermediate interface to describe the planning problem. In this process, LLM (1) translates the problem into “Problem PDDL”, then (2) requests a classical planner to generate a PDDL plan based on an existing “Domain PDDL”, and finally (3) translates the PDDL plan back into natural language. Essentially, the planning step is outsourced to an external tool, assuming the availability of domain-specific PDDL and a suitable planner which is common in certain robotic setups but not in many other domains.
 
-## Self-Reflection[#](#self-reflection)
+## Self-Reflection#
+
 
 Self-reflection is a vital aspect that allows autonomous agents to improve iteratively by refining past action decisions and correcting previous mistakes. It plays a crucial role in real-world tasks where trial and error are inevitable.
 
@@ -88,11 +92,13 @@ In reality, the model has limited context window length, so episodes should be s
 
 In comparison with three baselines, including ED (expert distillation, behavior cloning with expert trajectories instead of learning history), source policy (used for generating trajectories for distillation by [UCB](https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#upper-confidence-bounds)), RL^2 ([Duan et al. 2017](https://arxiv.org/abs/1611.02779); used as upper bound since it needs online RL), AD demonstrates in-context RL with performance getting close to RL^2 despite only using offline RL and learns much faster than other baselines. When conditioned on partial training history of the source policy, AD also improves much faster than ED baseline.
 
-# Component Two: Memory[#](#component-two-memory)
+# Component Two: Memory#
+
 
 (Big thank you to ChatGPT for helping me draft this section. I’ve learned a lot about the human brain and data structure for fast MIPS in my [conversations](https://chat.openai.com/share/46ff149e-a4c7-4dd7-a800-fc4a642ea389) with ChatGPT.)
 
-## Types of Memory[#](#types-of-memory)
+## Types of Memory#
+
 
 Memory can be defined as the processes used to acquire, store, retain, and later retrieve information. There are several types of memory in human brains.
 
@@ -109,7 +115,8 @@ We can roughly consider the following mappings:
 - Short-term memory as in-context learning. It is short and finite, as it is restricted by the finite context window length of Transformer.
 - Long-term memory as the external vector store that the agent can attend to at query time, accessible via fast retrieval.
 
-## Maximum Inner Product Search (MIPS)[#](#maximum-inner-product-search-mips)
+## Maximum Inner Product Search (MIPS)#
+
 
 The external memory can alleviate the restriction of finite attention span. A standard practice is to save the embedding representation of information into a vector store database that can support fast maximum inner-product search ([MIPS](https://en.wikipedia.org/wiki/Maximum_inner-product_search)). To optimize the retrieval speed, the common choice is the *approximate nearest neighbors (ANN)* algorithm to return approximately top k nearest neighbors to trade off a little accuracy lost for a huge speedup.
 
@@ -119,7 +126,8 @@ A couple common choices of ANN algorithms for fast MIPS:
 
 Check more MIPS algorithms and performance comparison in [ann-benchmarks.com](https://ann-benchmarks.com/).
 
-# Component Three: Tool Use[#](#component-three-tool-use)
+# Component Three: Tool Use#
+
 
 Tool use is a remarkable and distinguishing characteristic of human beings. We create, modify and utilize external objects to do things that go beyond our physical and cognitive limits. Equipping LLMs with external tools can significantly extend the model capabilities.
 
@@ -166,9 +174,11 @@ This benchmark evaluates the agent’s tool use capabilities at three levels:
 *retrieve the API*. The model needs to search for possible APIs that may solve the user’s requirement and learn how to use them by reading documentation. - Level-3 assesses the ability to
 *plan API beyond retrieve and call*. Given unclear user requests (e.g. schedule group meetings, book flight/hotel/restaurant for a trip), the model may have to conduct multiple API calls to solve it.
 
-# Case Studies[#](#case-studies)
+# Case Studies#
 
-## Scientific Discovery Agent[#](#scientific-discovery-agent)
+
+## Scientific Discovery Agent#
+
 
 **ChemCrow** ([Bran et al. 2023](https://arxiv.org/abs/2304.05376)) is a domain-specific example in which LLM is augmented with 13 expert-designed tools to accomplish tasks across organic synthesis, drug discovery, and materials design. The workflow, implemented in [LangChain](https://github.com/hwchase17/langchain), reflects what was previously described in the [ReAct](#react) and [MRKLs](#mrkl) and combines CoT reasoning with tools relevant to the tasks:
 
@@ -193,7 +203,8 @@ For example, when requested to `"develop a novel anticancer drug"`
 
 They also discussed the risks, especially with illicit drugs and bioweapons. They developed a test set containing a list of known chemical weapon agents and asked the agent to synthesize them. 4 out of 11 requests (36%) were accepted to obtain a synthesis solution and the agent attempted to consult documentation to execute the procedure. 7 out of 11 were rejected and among these 7 rejected cases, 5 happened after a Web search while 2 were rejected based on prompt only.
 
-## Generative Agents Simulation[#](#generative-agents-simulation)
+## Generative Agents Simulation#
+
 
 **Generative Agents** ([Park, et al. 2023](https://arxiv.org/abs/2304.03442)) is super fun experiment where 25 virtual characters, each controlled by a LLM-powered agent, are living and interacting in a sandbox environment, inspired by The Sims. Generative agents create believable simulacra of human behavior for interactive applications.
 
@@ -219,7 +230,8 @@ The design of generative agents combines LLM with memory, planning and reflectio
 
 This fun simulation results in emergent social behavior, such as information diffusion, relationship memory (e.g. two agents continuing the conversation topic) and coordination of social events (e.g. host a party and invite many others).
 
-## Proof-of-Concept Examples[#](#proof-of-concept-examples)
+## Proof-of-Concept Examples#
+
 
 [AutoGPT](https://github.com/Significant-Gravitas/Auto-GPT) has drawn a lot of attention into the possibility of setting up autonomous agents with LLM as the main controller. It has quite a lot of reliability issues given the natural language interface, but nevertheless a cool proof-of-concept demo. A lot of code in AutoGPT is about format parsing.
 
@@ -375,7 +387,8 @@ Conversatin samples:
 ```
 
 
-# Challenges[#](#challenges)
+# Challenges#
+
 
 After going through key ideas and demos of building LLM-centered agents, I start to see a couple common limitations:
 
@@ -384,7 +397,8 @@ After going through key ideas and demos of building LLM-centered agents, I start
 **Challenges in long-term planning and task decomposition**: Planning over a lengthy history and effectively exploring the solution space remain challenging. LLMs struggle to adjust plans when faced with unexpected errors, making them less robust compared to humans who learn from trial and error. -
 **Reliability of natural language interface**: Current agent system relies on natural language as an interface between LLMs and external components such as memory and tools. However, the reliability of model outputs is questionable, as LLMs may make formatting errors and occasionally exhibit rebellious behavior (e.g. refuse to follow an instruction). Consequently, much of the agent demo code focuses on parsing model output.
 
-# Citation[#](#citation)
+# Citation#
+
 
 Cited as:
 
@@ -405,7 +419,8 @@ url = "https://lilianweng.github.io/posts/2023-06-23-agent/"
 ```
 
 
-# References[#](#references)
+# References#
+
 
 [1] Wei et al. [“Chain of thought prompting elicits reasoning in large language models.”](https://arxiv.org/abs/2201.11903) NeurIPS 2022
 

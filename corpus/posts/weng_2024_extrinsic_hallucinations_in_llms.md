@@ -15,15 +15,18 @@ There are two types of hallucination:
 
 This post focuses on extrinsic hallucination. To avoid hallucination, LLMs need to be (1) factual and (2) acknowledge not knowing the answer when applicable.
 
-# What Causes Hallucinations?[#](#what-causes-hallucinations)
+# What Causes Hallucinations?#
+
 
 Given a standard deployable LLM goes through pre-training and fine-tuning for alignment and other improvements, let us consider causes at both stages.
 
-## Pre-training Data Issues[#](#pre-training-data-issues)
+## Pre-training Data Issues#
+
 
 The volume of the pre-training data corpus is enormous, as it is supposed to represent world knowledge in all available written forms. Data crawled from the public Internet is the most common choice and thus out-of-date, missing, or incorrect information is expected. As the model may incorrectly memorize this information by simply maximizing the log-likelihood, we would expect the model to make mistakes.
 
-## Fine-tuning New Knowledge[#](#fine-tuning-new-knowledge)
+## Fine-tuning New Knowledge#
+
 
 Fine-tuning a pre-trained LLM via supervised fine-tuning and [RLHF](https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#rl-fine-tuning-with-human-preferences) is a common technique for improving certain capabilities of the model like instruction following. Introducing new knowledge at the fine-tuning stage is hard to avoid.
 
@@ -65,9 +68,11 @@ ones.
 
 These empirical results from [Gekhman et al. (2024)](https://arxiv.org/abs/2405.05904) point out the risk of using supervised fine-tuning for updating LLMs’ knowledge.
 
-# Hallucination Detection[#](#hallucination-detection)
+# Hallucination Detection#
 
-## Retrieval-Augmented Evaluation[#](#retrieval-augmented-evaluation)
+
+## Retrieval-Augmented Evaluation#
+
 
 To quantify model hallucinations, [Lee et al. (2022)](https://arxiv.org/abs/2206.04624) introduced a new benchmark dataset, **FactualityPrompt**, consisting of both factual and nonfactual prompts. This dataset uses Wikipedia documents or sentences as the knowledge base for factuality grounding. The Wikipedia documents are known ground-truth from the [FEVER](https://fever.ai/dataset/fever.html) dataset, and the sentences are selected based on tf-idf or sentence embedding-based similarity.
 
@@ -107,13 +112,15 @@ Given the model response $y$, the metric **F1 @ K** is defined as:
 - Tool querying & evidence collection: Query external tools like search engine, code interpreter, Google scholar and get back results.
 - Agreement verification: Assign each claim a binary factuality label based on the level of support from evidence from external tools.
 
-## Sampling-Based Detection[#](#sampling-based-detection)
+## Sampling-Based Detection#
+
 
 **SelfCheckGPT** ([Manakul et al. 2023](https://arxiv.org/abs/2303.08896)) relies on consistency check on factuality mistakes against multiple samples from a black-box LLM. Considering that grey-box fact checking measurement needs access to token-level logprob of LLMs, SelfCheckGPT only requires samples with no dependency on external knowledge base, so black-box access is sufficient and no external knowledge base is needed.
 
 The method works with different metrics to measure the consistency between the model response and each of the other stochastic model samples, including BERTScore, NLI, prompting (asking yes/no), etc. SelfCheckGPT with prompting seems to work out the best, when experimenting on GPT-3 generated WikiBio passages.
 
-## Calibration of Unknown Knowledge[#](#calibration-of-unknown-knowledge)
+## Calibration of Unknown Knowledge#
+
 
 Prompting the model to generate responses to questions that are unanswerable or unknown could trigger hallucination. TruthfulQA ([Lin et al. 2021](https://arxiv.org/abs/2109.07958)) and SelfAware ([Yin et al. 2023](https://arxiv.org/abs/2305.18153)) are two benchmarks to measure how well model can generate truthful responses in such cases, while the former is adversarially constructed to emphasize human falsehoods and the latter contains questions unanswerable due to their nature. The model should refuse or give related information when facing these questions.
 
@@ -167,7 +174,8 @@ The experiment by [Kadavath et al. (2022)](https://arxiv.org/abs/2207.05221) sho
 
 token after the raw answer. Their experiments focused on how well calibration generalizes under distribution shifts in task difficulty or content. Each fine-tuning datapoint is a question, the model’s answer (possibly incorrect), and a calibrated confidence. Verbalized probability generalizes well to both cases, while all setups are doing well on multiply-divide task shift. Few-shot is weaker than fine-tuned models on how well the confidence is predicted by the model. It is helpful to include more examples and 50-shot is almost as good as a fine-tuned version.
 
-## Indirect Query[#](#indirect-query)
+## Indirect Query#
+
 
 [Agrawal et al. (2023)](https://arxiv.org/abs/2305.18248) specifically investigated the case of hallucinated references in LLM generation, including fabricated books, articles, and paper titles. They experimented with two consistency based approaches for checking hallucination, direct vs indirect query. Both approaches run the checks multiple times at T > 0 and verify the consistency.
 
@@ -177,11 +185,13 @@ token after the raw answer. Their experiments focused on how well calibration ge
 
 Hypothesis is that the likelihood of multiple generations agreeing on the same authors for a hallucinated reference would be smaller than the likelihood of multiple responses to an direct query indicating that the reference exists. Experiments showed that indirect query approach works better and larger model are more capable and can hallucinate less.
 
-# Anti-Hallucination Methods[#](#anti-hallucination-methods)
+# Anti-Hallucination Methods#
+
 
 Let’s review a set of methods to improve factuality of LLMs, ranging from retrieval of external knowledge base, special sampling methods to alignment fine-tuning. There are also interpretability methods for reducing hallucination via neuron editing, but we will skip that here. I may write about interpretability in a separate post later.
 
-## RAG → Edits and Attribution[#](#rag--edits-and-attribution)
+## RAG → Edits and Attribution#
+
 
 [RAG (Retrieval-augmented Generation)](https://lilianweng.github.io/posts/2020-10-29-odqa/#RAG) is a very common approach to provide grounding information, that is to retrieve relevant documents and then generate with related documents as extra context.
 
@@ -252,7 +262,8 @@ token:
 
 token to check whether the retrieved document is relevant. If relevant, generate $y_t$ and use other critique tokens to score, rank and select the best among multiple outputs.
 
-## Chain of Actions[#](#chain-of-actions)
+## Chain of Actions#
+
 
 Without grounding by external retrieved knowledge, we can design a process for using the model itself to do verification and revision to reduce hallucination.
 
@@ -281,13 +292,15 @@ Here are some interesting observations from the CoVe experiments:
 
 The generated recitation is comparable with the BM25 based retrieval model, but both have gaps with the use of ground truth passage. According to their error analysis, about 7-10% questions have the correct recitation but cannot produce the correct answer, while around 12% questions do not have the correct recitation but can be answered correctly anyway.
 
-## Sampling Methods[#](#sampling-methods)
+## Sampling Methods#
+
 
 [Lee, et al. (2022)](https://arxiv.org/abs/2206.04624) found that [nucleus sampling](https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#nucleus) (top-$p$ sampling) is found to perform worse on [FactualityPrompt](https://github.com/nayeon7lee/FactualityPrompt) benchmark than greedy sampling, although it achieves better diversity and less repetition, since nucleus sampling added extra randomness. So they proposed **factual-nucleus sampling** algorithm, based on the hypothesis that sampling randomness *does more harm to factuality at the latter part of the sentence than at the beginning*. Factual-nucleus sampling is designed to *dynamically* adapt the probability $p$ during sampling tokens for each sentence. For the $t$-th token in one sentence, we have $p_t = \max(\omega, p \cdot \lambda^{t−1})$ where $\omega$ is to prevent the sampling falls back to greedy that hurts generation quality and diversity.
 
 **Inference-Time Intervention** (**ITI**; [Li et al. 2023](https://arxiv.org/abs/2306.03341)) investigated whether certain attention heads are more correlated with factuality by fitting a linear probe on the activations in each layer to discriminate between truthful vs false outputs. They found for many heads, the probes cannot do better than random, while some show strong performance. After identifying a sparse set of attention heads with high linear probing accuracy for truthfulness, at inference time ITI shifts activations of top $K$ selected attention heads along the “truthful” direction.
 
-## Fine-tuning for Factuality[#](#fine-tuning-for-factuality)
+## Fine-tuning for Factuality#
+
 
 [Lee, et al. (2022)](https://arxiv.org/abs/2206.04624) proposed two ideas for factuality-enhanced training:
 
@@ -327,7 +340,8 @@ Process of factuality tuning:
 - Reference-based: check whether external knowledge base supports the model statement, similar to the above section on
 - Construct a training dataset by generating multiple samples from the model and assign preference based on truthfulness scores. Then we fine-tune the model with DPO on this dataset.
 
-## Fine-tuning for Attribution[#](#fine-tuning-for-attribution)
+## Fine-tuning for Attribution#
+
 
 Assigning attribution in the model outputs when generating conditions on search results is a good way to reduce hallucination. There is a branch of work to train LLMs to better consume retrieved content and assign high-quality attributions.
 
@@ -343,7 +357,8 @@ One additional trick to avoid low quality response is to configure the model to 
 
 The empirical results on RL is similar to WebGPT in that RL only brings in limited improvement or no improvement when combined with rejection sampling.
 
-# Appendix: Evaluation Benchmarks[#](#appendix-evaluation-benchmarks)
+# Appendix: Evaluation Benchmarks#
+
 
 Here is a list of datasets mentioned in this post.
 
@@ -379,7 +394,8 @@ or `NotEnoughInfo`
 
 [Mishra et al. 2024](https://arxiv.org/abs/2401.06855)) is a benchmark for evaluating fine-grained hallucination. There are 200 information-seeking source prompts and 3 model responses per prompt, resulting in 600 responses in total. Each model response is manually labeled with fine-grained annotations on hallucination error types.
 
-# Citation[#](#citation)
+# Citation#
+
 
 Cited as:
 
@@ -400,7 +416,8 @@ url = "https://lilianweng.github.io/posts/2024-07-07-hallucination/"
 ```
 
 
-# References[#](#references)
+# References#
+
 
 [1] Ji et al. [“Survey of hallucination in natural language generation.”](https://arxiv.org/abs/2202.03629) ACM Computing Surveys (2022)
 

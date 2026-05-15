@@ -8,7 +8,9 @@ Retrieved: 2026-05-15
 
 # Your AI Product Needs Evals
 
+
 ## Motivation
+
 
 I started working with language models five years ago when I led the team that created [CodeSearchNet](https://github.com/github/CodeSearchNet), a precursor to GitHub CoPilot. Since then, I’ve seen many successful and unsuccessful approaches to building LLM products. I’ve found that unsuccessful products almost always share a common root cause: **a failure to create robust evaluation systems.**
 
@@ -17,6 +19,7 @@ I’m currently an independent consultant who helps companies build domain-speci
 This post outlines my thoughts on building evaluation systems for LLMs-powered AI products.
 
 # Iterating Quickly == Success
+
 
 Like software engineering, success with AI hinges on how fast you can iterate. You must have processes and tools for:
 
@@ -32,6 +35,7 @@ To ground this post in a real-world situation, I’ll walk through a case study 
 
 # Case Study: Lucy, A Real Estate AI Assistant
 
+
 [Rechat](https://Rechat.com/) is a SaaS application that allows real estate professionals to perform various tasks, such as managing contracts, searching for listings, building creative assets, managing appointments, and more. The thesis of Rechat is that you can do everything in one place rather than having to context switch between many different tools.
 
 [Rechat’s AI assistant, Lucy](https://Rechat.com/ai/), is a canonical AI product: a conversational interface that obviates the need to click, type, and navigate the software. During Lucy’s beginning stages, rapid progress was made with prompt engineering. However, as Lucy’s surface area expanded, the performance of the AI plateaued. Symptoms of this were:
@@ -42,6 +46,7 @@ To ground this post in a real-world situation, I’ll walk through a case study 
 
 ## Problem: How To Systematically Improve The AI?
 
+
 To break through this plateau, we created a systematic approach to improving Lucy **centered on evaluation.** Our approach is illustrated by the diagram below.
 
 This diagram is a best-faith effort to illustrate my mental model for improving AI systems. In reality, the process is non-linear and can take on many different forms that may or may not look like this diagram.
@@ -49,6 +54,7 @@ This diagram is a best-faith effort to illustrate my mental model for improving 
 I discuss the various components of this system in the context of evaluation below.
 
 # The Types Of Evaluation
+
 
 Rigorous and systematic evaluation is the most important part of the whole system. That is why “Eval and Curation” is highlighted in yellow at the center of the diagram. You should spend most of your time making your evaluation more robust and streamlined.
 
@@ -64,9 +70,11 @@ There isn’t a strict formula as to when to introduce each level of testing. Yo
 
 ## Level 1: Unit Tests
 
+
 Unit tests for LLMs are assertions (like you would write in [pytest](https://docs.pytest.org/en/8.0.x/)). Unlike typical unit tests, you want to organize these assertions for use in places beyond unit tests, such as data cleaning and automatic retries (using the assertion error to course-correct) during model inference. The important part is that these assertions should run fast and cheaply as you develop your application so that you can run them every time your code changes. If you have trouble thinking of assertions, you should critically examine your traces and failure modes. Also, do not shy away from using an LLM to help you brainstorm assertions!
 
 ### Step 1: Write Scoped Tests
+
 
 The most effective way to think about unit tests is to break down the scope of your LLM into features and scenarios. For example, one feature of Lucy is the ability to find real estate listings, which we can break down into scenarios like so:
 
@@ -100,6 +108,7 @@ CRM results returned to the LLM contain fields that shouldn’t be surfaced to t
 **Rechat has hundreds of these unit tests. We continuously update them based on new failures we observe in the data as users challenge the AI or the product evolves.** These unit tests are crucial to getting feedback quickly when iterating on your AI system (prompt engineering, improving RAG, etc.). Many people eventually outgrow their unit tests and move on to other levels of evaluation as their product matures, but it is essential not to skip this step!
 
 ### Step 2: Create Test Cases
+
 
 To test these assertions, you must generate test cases or inputs that will trigger all scenarios you wish to test. I often utilize an LLM to generate these inputs synthetically; for example, here is one such prompt Rechat uses to generate synthetic inputs for a feature that creates and retrieves contacts:
 
@@ -143,6 +152,7 @@ On a related note, unlike traditional unit tests, you don’t necessarily need a
 
 ### Step 3: Run & Track Your Tests Regularly
 
+
 There are many ways to orchestrate Level 1 tests. Rechat has been leveraging CI infrastructure (e.g., GitHub Actions, GitLab Pipelines, etc.) to execute these tests. However, the tooling for this part of the workflow is nascent and evolving rapidly.
 
 My advice is to orchestrate tests that involve the least friction in your tech stack. In addition to tracking tests, you need to track the results of your tests over time so you can see if you are making progress. If you use CI, you should collect metrics along with versions of your tests/prompts outside your CI system for easy analysis and tracking.
@@ -153,9 +163,11 @@ This screenshot shows the prevalence of a particular error (shown in yellow) in 
 
 ## Level 2: Human & Model Eval
 
+
 After you have built a solid foundation of Level 1 tests, you can move on to other forms of validation that cannot be tested by assertions alone. A prerequisite to performing human and model-based eval is to log your traces.
 
 ### Logging Traces
+
 
 A trace is a concept that has been around for a while in software engineering and is a log of a sequence of events such as user sessions or a request flow through a distributed system. In other words, tracing is a logical grouping of logs. In the context of LLMs, traces often refer to conversations you have with a LLM. For example, a user message, followed by an AI response, followed by another user message, would be an example of a trace.
 
@@ -168,6 +180,7 @@ There are a growing number of solutions for logging LLM traces.[ 2](#fn2) Rechat
 I like LangSmith - it doesn’t require that you use LangChain and is intuitive and easy to use. Searching, filtering, and reading traces are essential features for whatever solution you pick. I’ve found that some tools do not implement these basic functions correctly!
 
 ### Looking At Your Traces
+
 
 **You must remove all friction from the process of looking at data.** This means rendering your traces in domain-specific ways. I’ve often found that it’s [better to build my own data viewing & labeling tool](https://hamel.dev/notes/llm/finetuning/04_data_cleaning.html) so I can gather all the information I need onto one screen. In Lucy’s case, we needed to look at many sources of information (trace log, the CRM, etc) to understand what the AI did. This is precisely the type of friction that needs to be eliminated. In Rechat’s case, this meant adding information like:
 
@@ -188,9 +201,11 @@ As discussed later, these labeled examples measure the quality of your system, v
 
 #### How much data should you look at?
 
+
 I often get asked how much data to examine. When starting, you should examine as much data as possible. I usually read traces generated from ALL test cases and user-generated traces at a minimum. **You can never stop looking at data—no free lunch exists.** However, you can sample your data more over time, lessening the burden. 3
 
 ### Automated Evaluation w/ LLMs
+
 
 Many vendors want to sell you tools that claim to eliminate the need for a human to look at the data. Having humans periodically evaluate at least a sample of traces is a good idea. I often find that “correctness” is somewhat subjective, and you must align the model with a human.
 
@@ -220,25 +235,30 @@ My favorite aspect about creating a good evaluator model is that its critiques c
 
 ## Level 3: A/B Testing
 
+
 Finally, it is always good to perform A/B tests to ensure your AI product is driving user behaviors or outcomes you desire. A/B testing for LLMs compared to other types of products isn’t too different. If you want to learn more about A/B testing, I recommend reading the [Eppo blog](https://www.geteppo.com/blog) (which was created by colleagues I used to work with who are rock stars in A/B testing).
 
 It’s okay to put this stage off until you are sufficiently ready and convinced that your AI product is suitable for showing to real users. This level of evaluation is usually only appropriate for more mature products.
 
 ## Evaluating RAG
 
+
 Aside from evaluating your system as a whole, you can evaluate sub-components of your AI, like RAG. Evaluating RAG is beyond the scope of this post, but you can learn more about this subject [in a post by Jason Liu](https://jxnl.github.io/blog/writing/2024/02/28/levels-of-complexity-rag-applications/).
 
 # Eval Systems Unlock Superpowers For Free
 
+
 In addition to iterating fast, eval systems unlock the ability to fine-tune and debug, which can take your AI product to the next level.
 
 ## Fine-Tuning
+
 
 Rechat resolved many failure modes through fine-tuning that were not possible with prompt engineering alone. **Fine-tuning is best for learning syntax, style, and rules, whereas techniques like RAG supply the model with context or up-to-date facts.**
 
 99% of the labor involved with fine-tuning is assembling high-quality data that covers your AI product’s surface area. However, if you have a solid evaluation system like Rechat’s, you already have a robust data generation and curation engine! I will expand more on the process of fine-tuning in a future post.4
 
 ### Data Synthesis & Curation
+
 
 To illustrate why data curation and synthesis come nearly for free once you have an evaluation system, consider the case where you want to create additional fine-tuning data for the listing finder mentioned earlier. First, you can use LLMs to generate synthetic data with a prompt like this:
 
@@ -257,6 +277,7 @@ This is almost identical to the exercise for producing test cases! You can then 
 
 ## Debugging
 
+
 When you get a complaint or see an error related to your AI product, you should be able to debug this quickly. If you have a robust evaluation system, you already have:
 
 - A database of traces that you can search and filter.
@@ -267,6 +288,7 @@ When you get a complaint or see an error related to your AI product, you should 
 In short, there is an incredibly large overlap between the infrastructure needed for evaluation and that for debugging.
 
 # Conclusion
+
 
 Evaluation systems create a flywheel that allows you to iterate very quickly. It’s almost always where people get stuck when building AI products. I hope this post gives you an intuition on how to go about building your evaluation systems. Some key takeaways to keep in mind:
 
@@ -289,6 +311,7 @@ I’d love to hear from you if you found this post helpful or have any questions
 *This article is an adaptation of this conversation I had with Emil Sedgh and Hugo Browne-Anderson on the Vanishing Gradients podcast. Thanks to Jeremy Howard, Eugene Yan, Shreya Shankar, Jeremy Lewi, and Joseph Gleasure for reviewing this article.*
 
 ## Footnotes
+
 
 This is not to suggest that people are lazy. Many don’t know how to set up eval systems and skip these steps.
 

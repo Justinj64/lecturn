@@ -8,6 +8,7 @@ Retrieved: 2026-05-15
 
 ## Making Large Language Models work for you
 
+
 27th August 2023
 
 I gave [an invited keynote](https://us.wordcamp.org/2023/session/making-large-language-models-work-for-you/) at [WordCamp 2023](https://us.wordcamp.org/2023/) in National Harbor, Maryland on Friday.
@@ -806,6 +807,7 @@ Thank you very much!
 
 #### Colophon
 
+
 I prepared the slides for this talk in Apple Keynote, embedding a large number of screenshots created using [CleanShot X](https://cleanshot.com/).
 
 To create this annotated version, I did the following:
@@ -831,5 +833,6 @@ into[MacWhisper](https://goodsnooze.gumroad.com/l/macwhisper)to generate a high-
 [subscribe to my newsletter](https://simonwillison.net/about/#subscribe)
 
 ## More recent articles
+
 
 [Notes on the xAI/Anthropic data center deal](/2026/May/7/xai-anthropic/)- 7th May 2026[Live blog: Code w/ Claude 2026](/2026/May/6/code-w-claude-2026/)- 6th May 2026[Vibe coding and agentic engineering are getting closer than I'd like](/2026/May/6/vibe-coding-and-agentic-engineering/)- 6th May 2026

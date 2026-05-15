@@ -12,6 +12,7 @@ Requires: pip install trafilatura pyyaml
 
 import argparse
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -177,6 +178,128 @@ PAPERS = [
 ]
 
 
+def _extract_headings_from_html(html: str) -> list[tuple[int, str]]:
+    """Extract heading tags (h1-h6) and their text from raw HTML.
+
+    Only returns headings that appear inside the article/main content area
+    (filters out nav/footer headings by excluding very short generic ones
+    like 'Products', 'Company', etc. that appear after the main content).
+    """
+    pattern = re.compile(r"<(h[1-6])[^>]*>(.*?)</\1>", re.IGNORECASE | re.DOTALL)
+    headings = []
+    for m in pattern.finditer(html):
+        level = int(m.group(1)[1])
+        text = re.sub(r"<[^>]+>", "", m.group(2)).strip()
+        if text and len(text) > 2:
+            headings.append((level, text, m.start()))
+    return headings
+
+
+def _normalize_ws(s: str) -> str:
+    """Collapse all whitespace to single spaces and strip."""
+    return re.sub(r"\s+", " ", s).strip().lower()
+
+
+def _reinsert_headings(content: str, headings: list[tuple[int, str, int]]) -> str:
+    """Re-insert markdown headings that trafilatura stripped.
+
+    Strategy: for each heading from the HTML, find the paragraph in the
+    extracted content that starts with text immediately following the heading
+    in the original article, and insert the heading as a markdown line before it.
+    If we can't find a match, look for a line whose text is a substring match
+    of the heading text.
+    """
+    lines = content.split("\n")
+    heading_prefix = {}  # line_index -> heading markdown
+
+    for level, text, _ in headings:
+        norm_heading = _normalize_ws(text)
+        # Try exact line match first
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or i in heading_prefix:
+                continue
+            norm_line = _normalize_ws(stripped)
+            if norm_line == norm_heading:
+                heading_prefix[i] = "#" * level
+                break
+        else:
+            # Try substring: find a line that contains the full heading text
+            for i, line in enumerate(lines):
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#") or i in heading_prefix:
+                    continue
+                norm_line = _normalize_ws(stripped)
+                if norm_line.startswith(norm_heading) and len(norm_heading) > 10:
+                    heading_prefix[i] = "#" * level
+                    break
+
+    for i in sorted(heading_prefix.keys(), reverse=True):
+        prefix = heading_prefix[i]
+        lines[i] = f"{prefix} {lines[i].strip()}"
+
+    return "\n".join(lines)
+
+
+def _inject_heading_markers(html: str) -> str:
+    """Inject visible text markers before headings in the HTML so that
+    trafilatura preserves them during extraction.
+
+    This works around trafilatura stripping heading tags on some JS-heavy sites.
+    We insert a unique sentinel paragraph before each heading containing
+    the heading text prefixed with markdown-style '#' markers.
+    """
+    def _replace_heading(m: re.Match) -> str:
+        tag = m.group(1)
+        level = int(tag[1])
+        inner = m.group(2)
+        text = re.sub(r"<[^>]+>", "", inner).strip()
+        if not text or len(text) <= 2:
+            return m.group(0)
+        marker = "#" * level
+        # Insert a paragraph with the markdown heading right before the heading tag
+        sentinel = f'<p data-heading-marker="true">{marker} {text}</p>'
+        return sentinel + m.group(0)
+
+    return re.sub(
+        r"<(h[1-6])([^>]*)>(.*?)</\1>",
+        lambda m: _replace_heading(re.match(r"<(h[1-6])[^>]*>(.*?)</\1>", m.group(0), re.DOTALL | re.IGNORECASE)),
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+
+def _cleanup_content(content: str) -> str:
+    """Remove duplicate consecutive heading lines and common nav/footer headings."""
+    lines = content.split("\n")
+    cleaned = []
+    prev_heading_text = ""
+    # Common footer/nav headings to remove
+    nav_headings = {
+        "get the developer newsletter", "products", "models", "solutions",
+        "claude platform", "resources", "help and security", "company",
+        "terms and policies",
+    }
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            heading_text = stripped.lstrip("#").strip().lower()
+            # Strip anchor fragments like [#](#section-name) and trailing #
+            heading_text_clean = re.sub(r"\[#\]\([^)]*\)", "", heading_text).rstrip("#").strip()
+            # Skip nav/footer headings
+            if heading_text_clean in nav_headings:
+                continue
+            # Skip duplicate headings (same text as previous heading, ignoring anchors)
+            if heading_text_clean and heading_text_clean == prev_heading_text:
+                continue
+            prev_heading_text = heading_text_clean
+        else:
+            if stripped:
+                prev_heading_text = ""
+        cleaned.append(line)
+    return "\n".join(cleaned)
+
+
 def fetch_post(post: dict, output_dir: Path) -> bool:
     """Fetch a single blog post and save as markdown. Returns True on success."""
     url = post["url"]
@@ -191,7 +314,7 @@ def fetch_post(post: dict, output_dir: Path) -> bool:
             return False
 
         content = trafilatura.extract(
-            downloaded,
+            _inject_heading_markers(downloaded),
             output_format="markdown",
             include_links=True,
             include_images=False,
@@ -203,6 +326,14 @@ def fetch_post(post: dict, output_dir: Path) -> bool:
         if content is None or len(content.strip()) < 100:
             print(f"  FAILED: Extraction returned insufficient content")
             return False
+
+        # Also try post-extraction heading reinsertion as a fallback
+        headings = _extract_headings_from_html(downloaded)
+        if headings:
+            content = _reinsert_headings(content, headings)
+
+        # Clean up: remove duplicate heading lines and nav/footer headings
+        content = _cleanup_content(content)
 
         header = (
             f"# {post['title']}\n\n"

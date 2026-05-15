@@ -6,6 +6,10 @@ Retrieved: 2026-05-15
 
 ---
 
+# eugeneyan
+
+# Task-Specific LLM Evals that Do & Don't Work
+
 [llm](/tag/llm/)
 [eval](/tag/eval/)
 [survey](/tag/survey/)
@@ -23,6 +27,8 @@ At the end, we’ll discuss [the role of human evaluation](#nonetheless-we-still
 Note: I’ve tried to make this accessible for folks who don’t have a data science or machine learning background. Thus, it starts with the basics of classification eval metrics. Feel free to skip any sections you’re already familiar with.
 
 By the way, if you want to learn more about evals, my friends Hamel and Shreya are hosting their *final* cohort of “AI Evals for Engineers and PMs” in July. Here’s a [35% discount code](https://maven.com/parlance-labs/evals?promoCode=eugene-is-all-you-need).
+
+## Classification/Extraction: ROC, PR, class distributions
 
 Classification is the task of assigning predefined labels to text, such as sentiment (positive, negative) or topics (sports, politics). Extraction is similar, where we identify specific pieces of information within the text, such as names, dates, or locations. Here’s an example:
 
@@ -82,6 +88,8 @@ Thus, they are not discriminative enough to cut a threshold on.
 Together, these metrics provide a solid toolbox for diagnosing classification performance and picking good thresholds for production.
 
 Now that we’ve the basics of evaluating classification tasks, we can discuss evals for summarization which, unsurprisingly, can be simplified to classification tasks too.
+
+## Summarization: Consistency, relevance, length
 
 Abstractive summarization is the task of generating concise summaries that capture the key ideas in a source document. Unlike extractive summarization which lifts entire sentences from the original text, abstractive summarization involves rephrasing and condensing information to create a newer, shorter version. It requires understanding the content, identifying important points, and not introducing hallucination defects.
 
@@ -169,6 +177,8 @@ While QA evals did well in OpinSummEval, IMHO, they’re too complex. We’d nee
 
 **A final eval to consider is length adherence.** This measures whether the model can follow instructions and n-shot examples to generate summaries that meet a word or character limit. Length adherence is crucial for many real-world applications where space is limited, such as push notifications or review summary snippets. Evaluating this is straightforward—we can simply count the number of words or characters in the generated summary.
 
+## Translation: Statistical & learned evals for quality
+
 Machine translation is the task of automatically converting text from one language to another. The goal is to preserve the original meaning and intent while producing translations that are fluent and grammatically correct in the target language.
 
 There are countless evals for machine translation. To narrow it down, we can look to the annual [Workshop on Machine Translation (WMT)](https://www2.statmt.org/wmt23/) for guidance. We’ll focus on three reference-based evals (which compare the machine translation to a human-written reference translation) and one reference-free eval:
@@ -255,6 +265,8 @@ checkpoint with the same code as before. Unfortunately, it has a non-commercial 
 
 *Beyond the three tasks of classification, summarization, and translation, I think it’s also helpful to consider evals of key defects such as content regurgitation and toxicity.*
 
+## Copyright: Regurgitation & near-exact reproduction
+
 **Copyright regurgitation is the extent to which models reproduce copyrighted or licensed content from their pretraining data.** While memorizing copyrighted content doesn’t necessarily imply legal risk, it could lead to “extraction attacks” where bad actors try to extract sensitive or proprietary information from the model.
 
 [HELM (Holistic Evaluation of Language Models)](https://arxiv.org/abs/2211.09110) found that the worst offenders only regurgitated copyrighted content infrequently, with the longest common subsequence (LCS) between generated text and copyright content being [less than 0.1](https://crfm.stanford.edu/helm/classic/latest/#/groups/copyright_text) for most models. In general, there was no copyright regurgitation at all. Nonetheless, some models were able to reproduce large spans of several Harry Potter books (davinci, anthropic-lm-v4) and “Oh, the Places You’ll Go” (opt, anthropic-lm-v4).
@@ -268,6 +280,8 @@ To quantify the overlap between model outputs and reference texts, they computed
 
 If you have an LLM app or feature that may return copyright material (e.g., codegen, media) and want to assess the risk, try HELM’s approach above. The first lines of Harry Potter will almost always work, given how common it is on the internet. Thus, use something from the middle of the books instead.
 
+
+## Toxicity: RealToxicityPrompts & BOLD
 
 **Toxicity is the proportion of generated output that is classified as harmful, offensive, or inappropriate.** In HELM, they used the [Perspective API](https://perspectiveapi.com) to measure toxicity where the threshold for toxicity is set at $p \geq 0.5$. This was computed at the instance level (i.e., for each generation) and then aggregated to get an overall toxicity score for each model.
 
@@ -290,6 +304,8 @@ The results show that some models do generate harmful or toxic content when give
 If you’re concerned that your LLM application or feature may return toxic or biased text, test it with RealToxicityPrompts and/or BOLD. From experience though, recent LLMs do a good job at ensuring harmless output.
 
 
+## Nonetheless, we still need human evaluation
+
 **While we’ve been focusing on automated evals, we should not forget the role of human evaluation.** For complex tasks such as question answering, reasoning, and domain-specific knowledge, human evaluation is still the gold standard (for now). Furthermore, most automated evals rely on human annotations. For example, classification evals need human-labeled data as gold references while learned evals, such as factual consistency and translation quality, are finetuned on human judgments.
 
 And even after we’ve collected an initial set of labels as ground truth or to finetune evaluation models, we’ll want to collect more labels—via active learning—to continuously improve. Taking the example of a classification eval, we can select instances to annotate based on the need to:
@@ -308,6 +324,8 @@ If you’re looking for guidelines for human annotators, [Chang et al.](https://
 - Transparency: Does the model communicate its thought process and reasoning? Techniques like chain-of-thought help with this.
 - Safety: Are there potential harms or unintended consequences from the generated text? This includes toxicity, bias, and misinformation.
 - Human alignment: To what extent does the model’s output align with human values, preferences, and expectations?
+
+## Calibrate your evaluation bar to the level of risk
 
 **We should be pragmatic when setting our evaluation bar.** It’s tempting to aim for near-perfect scores on every eval. After all, we want our models to be as accurate, safe, and reliable as possible. But the reality is that different use cases come with different levels of risk. Thus, our evaluation standards should be calibrated accordingly.
 
@@ -337,7 +355,11 @@ Thanks to [Hamel Husain](https://twitter.com/HamelHusain), [Vibhu Sapra](https:/
 
 By the way, if you want to learn more about evals, my friends Hamel and Shreya are hosting their *final* cohort of “AI Evals for Engineers and PMs” in July. Here’s a [35% discount code](https://maven.com/parlance-labs/evals?promoCode=eugene-is-all-you-need).
 
+## Further reading
+
 [Retrieval and end-to-end evaluation for RAG](https://github.com/run-llama/ai-engineer-workshop/blob/main/notebooks/02_evaluation.ipynb)[Evaluating the](https://github.com/jxnl/n-levels-of-rag)*n*levels of RAG[Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/)
+
+## References
 
 - Kryściński, Wojciech, et al.
 [“Neural text summarization: A critical evaluation.”](https://arxiv.org/abs/1908.08960)*arXiv preprint arXiv:1908.08960*(2019). - Zhang, Tianyi, et al.
@@ -372,15 +394,23 @@ By the way, if you want to learn more about evals, my friends Hamel and Shreya a
 [“On the challenges of using black-box apis for toxicity evaluation in research.”](https://arxiv.org/abs/2304.12397)arXiv preprint arXiv:2304.12397 (2023). - Chang, Yupeng, et al.
 [“A survey on evaluation of large language models.”](https://arxiv.org/abs/2307.03109)*ACM Transactions on Intelligent Systems and Technology*(2023).
 
+## Appendix
+
+### What about reference-based evals for summarization?
+
 The most commonly used summarization evals compare generated summaries to a gold reference summary via n-gram matching (e.g., ROUGE, METEOR) or embedding similarity (e.g., BERTScore, MoverScore). **However, I’ve found them impractical because:**
 
 - They require gold references which are a bottleneck: Thus, we need to collect gold summaries for each new summarization task. This typically involves writing guidelines, training annotators, and continuously auditing for quality.
 - References may be poor quality:
 [Fabbri et al (2021)](https://arxiv.org/abs/2007.12626)and[Zhang et al. (2023)](https://arxiv.org/abs/2301.13848)found generated summaries to surpass reference summaries in CNN/DailyMail and XSUM. Thus, it does not make sense to evaluate generations against poorer references. - Poor separation of distributions: While academic papers often report decent correlation between these metrics and human annotations, empirically, their variance from ground truth is too high and the separation of distributions is too close to be used.
 
+### What about LLM-based evals for summarization?
+
 A commonly cited LLM-based eval is [G-Eval](https://arxiv.org/abs/2303.16634). It applies LLMs with chain-of-thought and a form-filling paradigm to evaluate summaries. However, while its reported Spearman correlation with human judgements surpasses previous SOTA evaluators, empirically, it’s unreliable (low recall), costly (at least double the token count), and has poor sensitivity (to nuanced inconsistencies).
 
 Furthermore, [HaluEval](https://arxiv.org/abs/2305.11747), a hallucination evaluation benchmark, found similar results: Models such as ChatGPT and Claude 2 could not distinguish between factual and hallucinated summaries—their accuracy was only 53.8% - 58.5%. (Unfortunately, they didn’t provide metrics for recall and precision.)
+
+### Code to compute the classification metric graphs
 
 ```
 def kl_divergence(p, q):

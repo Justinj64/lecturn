@@ -6,6 +6,10 @@ Retrieved: 2026-05-15
 
 ---
 
+# eugeneyan
+
+# Patterns for Building LLM-based Systems & Products
+
 [llm](/tag/llm/)
 [engineering](/tag/engineering/)
 [production](/tag/production/)
@@ -27,12 +31,18 @@ There are seven key patterns. They’re also organized along the spectrum of imp
 
 (Also see this addendum on [how to match these LLM patterns to potential problems](/writing/llm-problems/).)
 
+## Evals: To measure performance
+
 Evaluations are a set of measurements used to assess a model’s performance on a task. They include benchmark data and metrics. From a [HackerNews comment](https://news.ycombinator.com/item?id=36789901):
 
 How important evals are to the team is a major differentiator between folks rushing out hot garbage and those seriously building products in the space.
 
 
+### Why evals?
+
 Evals enable us to measure how well our system or product is doing and detect any regressions. (A system or product can be made up of multiple components such as LLMs, prompt templates, retrieved context, and parameters like temperature.) A representative set of evals takes us a step towards measuring system changes at scale. Without evals, we would be flying blind, or would have to visually inspect LLM outputs with each change.
+
+### More about evals
 
 **There are many benchmarks in the field of language modeling**. Some notable ones are:
 
@@ -109,6 +119,8 @@ Overall, they found that GPT-4 not only provided consistent scores but could als
 
 To validate the automated evaluation, they collected human judgments on the Vicuna benchmark. Using Mechanical Turk, they enlisted two annotators for comparisons to gpt-3.5-turbo, and three annotators for pairwise comparisons. They found that human and GPT-4 ranking of models were largely in agreement, with a Spearman rank correlation of 0.55 at the model level. This provides an additional data point suggesting that LLM-based automated evals could be a cost-effective and reasonable alternative to human evals.
 
+### How to apply evals?
+
 **Building solid evals should be the starting point** for any LLM-based system or product (as well as conventional machine learning systems).
 
 Unfortunately, classical metrics such as BLEU and ROUGE don’t make sense for more complex tasks such as abstractive summarization or dialogue. Furthermore, we’ve seen that benchmarks like MMLU (and metrics like ROUGE) are sensitive to how they’re implemented and measured. And to be candid, unless your LLM system is studying for a school exam, using MMLU as an eval [doesn’t quite make sense](https://twitter.com/Tim_Dettmers/status/1680782418335367169).
@@ -137,11 +149,17 @@ The vibe-based eval cannot be underrated. … One of our evals was just having a
 
 Also see this [deep dive into evals](/writing/abstractive/) for abstractive summarization. It covers reference, context, and preference-based metrics, and also discusses hallucination detection.
 
+## Retrieval-Augmented Generation: To add knowledge
+
 Retrieval-Augmented Generation (RAG) fetches relevant data from outside the foundation model and enhances the input with this data, providing richer context to improve output.
+
+### Why RAG?
 
 RAG helps reduce hallucination by grounding the model on the retrieved context, thus increasing factuality. In addition, it’s cheaper to keep retrieval indices up-to-date than to continuously pre-train an LLM. This cost efficiency makes it easier to provide LLMs with access to recent data via RAG. Finally, if we need to update or remove data such as biased or toxic documents, it’s more straightforward to update the retrieval index (compared to fine-tuning or prompting an LLM not to generate toxic outputs).
 
 In short, RAG applies mature and simpler ideas from the field of information retrieval to support LLM generation. In a [recent Sequoia survey](https://www.sequoiacap.com/article/llm-stack-perspective/), 88% of respondents believe that retrieval will be a key component of their stack.
+
+### More about RAG
 
 Before diving into RAG, it helps to have a basic understanding of text embeddings. (Feel free to skip this section if you’re familiar with the subject.)
 
@@ -217,6 +235,8 @@ Given a query, HyDE first prompts an LLM, such as InstructGPT, to generate a hyp
 
 The expectation is that the encoder’s dense bottleneck serves as a lossy compressor and the extraneous, non-factual details are excluded via the embedding. This reframes the relevance modeling problem from a representation learning task to a generation task.
 
+### How to apply RAG
+
 From experience with [Obsidian-Copilot](/writing/obsidian-copilot/), I’ve found that hybrid retrieval (traditional search index + embedding-based search) works better than either alone. There, I complemented classical retrieval (BM25 via OpenSearch) with semantic search (`e5-small-v2`
 
 ).
@@ -281,6 +301,8 @@ When evaluating an ANN index, some factors to consider include:
 
 No single framework is better than all others in every aspect. Thus, start by defining your functional and non-functional requirements before benchmarking. Personally, I’ve found ScaNN to be outstanding in the recall-latency trade-off (see benchmark graph [here](/writing/real-time-recommendations/#how-to-design-and-implement-an-mvp)).
 
+## Fine-tuning: To get better at specific tasks
+
 Fine-tuning is the process of taking a pre-trained model (that has already been trained with a vast amount of data) and further refining it on a specific task. The intent is to harness the knowledge that the model has already acquired during its pre-training and apply it to a specific task, usually involving a smaller, task-specific, dataset.
 
 The term “fine-tuning” is used loosely and can refer to several concepts such as:
@@ -289,6 +311,8 @@ The term “fine-tuning” is used loosely and can refer to several concepts suc
 
 We’ll mainly focus on single-task and instruction fine-tuning here.
 
+### Why fine-tuning?
+
 Fine-tuning an open LLM is becoming an increasingly viable alternative to using a 3rd-party, cloud-based LLM for several reasons.
 
 **Performance & control:** Fine-tuning can improve the performance of an off-the-shelf base model, and may even surpass a 3rd-party LLM. It also provides greater control over LLM behavior, resulting in a more robust system or product. Overall, fine-tuning enables us to build products that are differentiated from simply using 3rd-party or open LLMs.
@@ -296,6 +320,8 @@ Fine-tuning an open LLM is becoming an increasingly viable alternative to using 
 **Modularization:** Single-task fine-tuning lets us to use an army of smaller models that each specialize on their own tasks. Via this setup, a system can be modularized into individual models for tasks like content moderation, extraction, summarization, etc. Also, given that each model only has to focus on a narrow set of tasks, we can get around the alignment tax, where fine-tuning a model on one task reduces performance on other tasks.
 
 **Reduced dependencies:** By fine-tuning and hosting our own models, we can reduce legal concerns about proprietary data (e.g., PII, internal documents and code) being exposed to external APIs. It also gets around constraints that come with 3rd-party LLMs such as rate-limiting, high costs, or overly restrictive safety filters. By fine-tuning and hosting our own LLMs, we can ensure data doesn’t leave our network, and can scale throughput as needed.
+
+### More about fine-tuning
 
 Why do we need to fine-tune a *base* model? At the risk of oversimplifying, base models are primarily optimized to predict the next word based on the corpus they’re trained on. Hence, they aren’t naturally adept at following instructions or answering questions. When posed a question, they tend to respond with more questions. Thus, we perform instruction fine-tuning so they learn to respond appropriately.
 
@@ -345,6 +371,8 @@ As a result, QLoRA reduces the average memory requirements for fine-tuning a 65B
 
 (Fun fact: During a meetup with Tim Dettmers, an author of QLoRA, he quipped that double quantization was “a bit of a silly idea but works perfectly.” Hey, if it works, it works.)
 
+### How to apply fine-tuning?
+
 The first step is to **collect demonstration data/labels**. These could be for straightforward tasks such as document classification, entity extraction, or summarization, or they could be more complex such as Q&A or dialogue. Some ways to collect this data include:
 
 **Via experts or crowd-sourced human annotators**: While this is expensive and slow, it usually leads to higher-quality data with[good guidelines](/writing/labeling-guidelines/).**Via user feedback**: This can be as simple as asking users to select attributes that describe a product, rating LLM responses with thumbs up or down (e.g., ChatGPT), or logging which images users choose to download (e.g., Midjourney).**Query larger open models with permissive licenses**: With prompt engineering, we might be able to elicit reasonable demonstration data from a larger model (Falcon 40B Instruct) that can be used to fine-tune a smaller model.**Reuse open-source data**: If your task can be framed as a natural language inference (NLI) task, we could fine-tune a model to perform NLI using[MNLI data](https://cims.nyu.edu/~sbowman/multinli/). Then, we can continue fine-tuning the model on internal data to classify inputs as entailment, neutral, or contradiction.
@@ -365,11 +393,17 @@ We may also need to **update the model architecture**, such as when the pre-trai
 
 **Finally, basic hyperparameter tuning.** Generally, most papers focus on learning rate, batch size, and number of epochs (see LoRA, QLoRA). And if we’re using LoRA, we might want to tune the rank parameter (though the QLoRA paper found that different rank and alpha led to similar results). Other hyperparameters include input sequence length, loss type (contrastive loss vs. token match), and data ratios (like the mix of pre-training or demonstration data, or the ratio of positive to negative examples, among others).
 
+## Caching: To reduce latency and cost
+
 Caching is a technique to store data that has been previously retrieved or computed. This way, future requests for the same data can be served faster. In the space of serving LLM generations, the popularized approach is to cache the LLM response keyed on the embedding of the input request. Then, for each new request, if a semantically similar request is received, we can serve the cached response.
 
 For some practitioners, this sounds like “[a disaster waiting to happen.](https://twitter.com/HanchungLee/status/1681146845186363392)” I’m inclined to agree. Thus, I think the key to adopting this pattern is figuring out how to cache safely, instead of solely depending on semantic similarity.
 
+### Why caching?
+
 Caching can significantly reduce latency for responses that have been served before. In addition, by eliminating the need to compute a response for the same input again and again, we can reduce the number of LLM requests and thus save cost. Also, there are certain use cases that do not support latency on the order of seconds. Thus, pre-computing and caching may be the only way to serve those use cases.
+
+### More about caching
 
 A cache is a high-speed storage layer that stores a subset of data that’s accessed more frequently. This lets us serve these requests faster via the cache instead of the data’s primary storage (e.g., search index, relational database). Overall, caching enables efficient reuse of previously fetched or computed data. (More about [caching](https://aws.amazon.com/caching/) and [best practices](https://aws.amazon.com/caching/best-practices/).)
 
@@ -385,6 +419,8 @@ When a new request is received:
 - LLM: If the request isn’t similar enough, it gets passed to the LLM which then generates the result. Finally, the response is served and cached for future use.
 
 Redis also shared a [similar example](https://www.youtube.com/live/9VgpXcfJYvw?feature=share&t=1517), mentioning that some teams go as far as precomputing all the queries they anticipate receiving. Then, they set a similarity threshold on which queries are similar enough to warrant a cached response.
+
+### How to apply caching?
 
 **We should start with having a good understanding of user request patterns**. This allows us to design the cache thoughtfully so it can be applied reliably.
 
@@ -402,11 +438,17 @@ Also, **caching doesn’t only have to occur on-the-fly.** As Redis shared, we c
 
 While the approaches listed here may not be as flexible as semantically caching on natural language inputs, I think it provides a good balance between efficiency and reliability.
 
+## Guardrails: To ensure output quality
+
 In the context of LLMs, guardrails validate the output of LLMs, ensuring that the output doesn’t just sound good but is also syntactically correct, factual, and free from harmful content. It also includes guarding against adversarial input.
+
+### Why guardrails?
 
 First, they help ensure that model outputs are reliable and consistent enough to use in production. For example, we may require output to be in a specific JSON schema so that it’s machine-readable, or we need code generated to be executable. Guardrails can help with such syntactic validation.
 
 Second, they provide an additional layer of safety and maintain quality control over an LLM’s output. For example, to verify if the content generated is appropriate for serving, we may want to check that the output isn’t harmful, verify it for factual accuracy, or ensure coherence with the context provided.
+
+### More about guardrails
 
 **One approach is to control the model’s responses via prompts.** For example, Anthropic shared about prompts designed to guide the model toward generating responses that are [helpful, harmless, and honest](https://arxiv.org/abs/2204.05862) (HHH). They found that Python fine-tuning with the HHH prompt led to better performance compared to fine-tuning with RLHF.
 
@@ -435,6 +477,8 @@ However, Guidance sets itself apart from regular templating languages by executi
 
 They also introduced a concept called [token healing](https://github.com/microsoft/guidance#token-healing-notebook), a useful feature that helps avoid subtle bugs that occur due to tokenization. In simple terms, it rewinds the generation by one token before the end of the prompt and then restricts the first generated token to have a prefix matching the last token in the prompt. This eliminates the need to fret about token boundaries when crafting prompts.
 
+### How to apply guardrails?
+
 Though the concept of guardrails for LLMs in industry is still nascent, there are a handful of immediately useful and practical strategies we can consider.
 
 **Structural guidance:** Apply guidance whenever possible. It provides direct control over outputs and offers a more precise method to ensure that output conforms to a specific structure or format.
@@ -447,13 +491,19 @@ Though the concept of guardrails for LLMs in industry is still nascent, there ar
 
 **Input guardrails:** These limit the types of input the model will respond to, helping to mitigate the risk of the model responding to inappropriate or adversarial prompts which would lead to generating harmful content. For example, you’ll get an error if you ask Midjourney to generate NSFW content. This can be as straightforward as comparing against a list of strings or using a moderation classifier.
 
+## Defensive UX: To anticipate & handle errors gracefully
+
 Defensive UX is a design strategy that acknowledges that bad things, such as inaccuracies or hallucinations, can happen during user interactions with machine learning or LLM-based products. Thus, the intent is to anticipate and manage these in advance, primarily by guiding user behavior, averting misuse, and handling errors gracefully.
+
+### Why defensive UX?
 
 Machine learning and LLMs aren’t perfect—they can produce inaccurate output. Also, they respond differently to the same input over time, such as search engines displaying varying results due to personalization, or LLMs generating diverse output on more creative, higher temperature, settings. This can violate the principle of consistency which advocates for a consistent UI and predictable behaviors.
 
 Defensive UX can help mitigate the above by providing:
 
 **Increased accessibility**: By helping users understand how ML/LLM features work and their limitations, defensive UX makes it more accessible and user-friendly.**Increased trust**: When users see that the feature can handle difficult scenarios gracefully and doesn’t produce harmful output, they’re likely to trust it more.**Better UX**: By designing the system and UX to handle ambiguous situations and errors, defensive UX paves the way for a smoother, more enjoyable user experience.
+
+### More about defensive UX
 
 To learn more about defensive UX, we can look at Human-AI guidelines from Microsoft, Google, and Apple.
 
@@ -485,6 +535,8 @@ The document focuses on how Apple’s design principles can be applied to ML-inf
 It then delves into several patterns, split into inputs and outputs of a system. Inputs focus on explicit feedback, implicit feedback, calibration, and corrections. This section guides the design for how AI products request and process user data and interactions. Outputs focus on mistakes, multiple options, confidence, attribution, and limitations. The intent is to ensure the model’s output is presented in a comprehensible and useful manner.
 
 The differences between the three guidelines are insightful. Google has more emphasis on considerations for training data and model development, likely due to its engineering-driven culture. Microsoft has more focus on mental models, likely an artifact of the HCI academic study. Lastly, Apple’s approach centers around providing a seamless UX, a focus likely influenced by its cultural values and principles.
+
+### How to apply defensive UX?
 
 Here are some patterns based on the guidelines above. (Disclaimer: I’m not a designer.)
 
@@ -522,13 +574,19 @@ Furthermore, increasing user effort leads to higher expectations that are harder
 
 Thus, while chat offers more flexibility, it also demands more user effort. Moreover, using a chat box is less intuitive as it lacks signifiers on how users can adjust the output. Overall, I think that sticking with a familiar and constrained UI makes it easier for users to navigate our product; chat should only be considered as a secondary or tertiary option.
 
+## Collect user feedback: To build our data flywheel
+
 Gathering user feedback allows us to learn their preferences. Specific to LLM products, user feedback contributes to building evals, fine-tuning, and guardrails. If we think about it, data—such as corpus for pre-training, expert-crafted demonstrations, human preferences for reward modeling—is one of the few moats for LLM products. Thus, we want to be deliberately thinking about collecting user feedback when designing our UX.
 
 Feedback can be explicit or implicit. Explicit feedback is information users provide in response to a request by our product; implicit feedback is information we learn from user interactions without needing users to deliberately provide feedback.
 
+### Why collect user feedback
+
 User feedback **helps our models improve**. By learning what users like, dislike, or complain about, we can improve our models to better meet their needs. It also allows us to **adapt to individual preferences**. Recommendation systems are a prime example. As users interact with items, we learn what they like and dislike and better cater to their tastes over time.
 
 In addition, the feedback loop helps us **evaluate our system’s overall performance**. While evals can help us measure model/system performance, user feedback offers a concrete measure of user satisfaction and product effectiveness.
+
+### How to collect user feedback
 
 **Make it easy for users to provide feedback.** This is echoed across all three guidelines:
 
@@ -545,6 +603,8 @@ Midjourney is another good example. After images are generated, users can genera
 Copilot-like assistants are a prime example. Users indicate whether a suggestion was helpful by either wholly accepting it (strong positive feedback), accepting and making minor tweaks (positive feedback), or ignoring it (neutral/negative feedback). Alternatively, they may update the comment that led to the generated code, suggesting that the initial code generation didn’t meet their needs.
 
 Chatbots, such as ChatGPT and BingChat, are another example. How has daily usage changed over time? If the product is sticky, it suggests that users like it. Also, how long is the average conversation? This can be tricky to interpret: Is a longer conversation better because the conversation was engaging and fruitful? Or is it worse because it took the user longer to get what they needed?
+
+## Other patterns common in machine learning
 
 Apart from the seven patterns above, there are other patterns in machine learning that are also relevant to LLM systems and products. They include:
 
@@ -582,9 +642,13 @@ Guardrails is super relevant for building analytics tools where llm is a transla
 
 [m_voitko]
 
+## Conclusion
+
 This is the longest post I’ve written by far. If you’re still with me, thank you! I hope you found reading about these patterns helpful, and that the 2x2 below makes sense.
 
 We’re still so early on the journey towards building LLM-based systems and products. Are there any other key patterns or resources? What have you found useful or not useful? I’d love to hear your experience. **Please reach out!**
+
+## References
 
 Hendrycks, Dan, et al. [“Measuring massive multitask language understanding.”](https://arxiv.org/abs/2009.03300) arXiv preprint arXiv:2009.03300 (2020).
 
