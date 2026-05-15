@@ -26,6 +26,10 @@ However, as your knowledge base grows, you'll need a more scalable solution. Tha
 
 For larger knowledge bases that don't fit within the context window, RAG is the typical solution. RAG works by preprocessing a knowledge base using the following steps:
 
+- Break down the knowledge base (the “corpus” of documents) into smaller chunks of text, usually no more than a few hundred tokens;
+- Use an embedding model to convert these chunks into vector embeddings that encode meaning;
+- Store these embeddings in a vector database that allows for searching by semantic similarity.
+
 At runtime, when a user inputs a query to the model, the vector database is used to find the most relevant chunks based on semantic similarity to the query. Then, the most relevant chunks are added to the prompt sent to the generative model.
 
 While embedding models excel at capturing semantic relationships, they can miss crucial exact matches. Fortunately, there’s an older technique that can assist in these situations. BM25 (Best Matching 25) is a ranking function that uses lexical matching to find precise word or phrase matches. It's particularly effective for queries that include unique identifiers or technical terms.
@@ -35,6 +39,13 @@ BM25 works by building upon the TF-IDF (Term Frequency-Inverse Document Frequenc
 Here’s how BM25 can succeed where semantic embeddings fail: Suppose a user queries "Error code TS-999" in a technical support database. An embedding model might find content about error codes in general, but could miss the exact "TS-999" match. BM25 looks for this specific text string to identify the relevant documentation.
 
 RAG solutions can more accurately retrieve the most applicable chunks by combining the embeddings and BM25 techniques using the following steps:
+
+- Break down the knowledge base (the "corpus" of documents) into smaller chunks of text, usually no more than a few hundred tokens;
+- Create TF-IDF encodings and semantic embeddings for these chunks;
+- Use BM25 to find top chunks based on exact matches;
+- Use embeddings to find top chunks based on semantic similarity;
+- Combine and deduplicate results from (3) and (4) using rank fusion techniques;
+- Add the top-K chunks to the prompt to generate the response.
 
 By leveraging both BM25 and embedding models, traditional RAG systems can provide more comprehensive and accurate results, balancing precise term matching with broader semantic understanding.
 
@@ -86,13 +97,22 @@ The graphs below show the average performance across all knowledge domains with 
 
 Our experiments showed that:
 
+**Contextual Embeddings reduced the top-20-chunk retrieval failure rate by 35%**(5.7% → 3.7%).**Combining Contextual Embeddings and Contextual BM25 reduced the top-20-chunk retrieval failure rate by 49%**(5.7% → 2.9%).
+
 When implementing Contextual Retrieval, there are a few considerations to keep in mind:
+
+**Chunk boundaries:**Consider how you split your documents into chunks. The choice of chunk size, chunk boundary, and chunk overlap can affect retrieval performance1.**Embedding model:**Whereas Contextual Retrieval improves performance across all embedding models we tested, some models may benefit more than others. We found[Gemini](https://ai.google.dev/gemini-api/docs/embeddings)and[Voyage](https://www.voyageai.com/)embeddings to be particularly effective.**Custom contextualizer prompts:**While the generic prompt we provided works well, you may be able to achieve even better results with prompts tailored to your specific domain or use case (for example, including a glossary of key terms that might only be defined in other documents in the knowledge base).**Number of chunks:**Adding more chunks into the context window increases the chances that you include the relevant information. However, more information can be distracting for models so there's a limit to this. We tried delivering 5, 10, and 20 chunks, and found using 20 to be the most performant of these options (see appendix for comparisons) but it’s worth experimenting on your use case.
 
 **Always run evals: **Response generation may be improved by passing it the contextualized chunk and distinguishing between what is context and what is the chunk.
 
 In a final step, we can combine Contextual Retrieval with another technique to give even more performance improvements. In traditional RAG, the AI system searches its knowledge base to find the potentially relevant information chunks. With large knowledge bases, this initial retrieval often returns a lot of chunks—sometimes hundreds—of varying relevance and importance.
 
 Reranking is a commonly used filtering technique to ensure that only the most relevant chunks are passed to the model. Reranking provides better responses and reduces cost and latency because the model is processing less information. The key steps are:
+
+- Perform initial retrieval to get the top potentially relevant chunks (we used the top 150);
+- Pass the top-N chunks, along with the user's query, through the reranking model;
+- Using a reranking model, give each chunk a score based on its relevance and importance to the prompt, then select the top-K chunks (we used the top 20);
+- Pass the top-K chunks into the model as context to generate the final result.
 
 There are several reranking models on the market. We ran our tests with the [Cohere reranker](https://cohere.com/rerank). Voyage[ also offers a reranker](https://docs.voyageai.com/docs/reranker), though we did not have time to test it. Our experiments showed that, across various domains, adding a reranking step further optimizes retrieval.
 
@@ -101,6 +121,13 @@ Specifically, we found that Reranked Contextual Embedding and Contextual BM25 re
 One important consideration with reranking is the impact on latency and cost, especially when reranking a large number of chunks. Because reranking adds an extra step at runtime, it inevitably adds a small amount of latency, even though the reranker scores all the chunks in parallel. There is an inherent trade-off between reranking more chunks for better performance vs. reranking fewer for lower latency and cost. We recommend experimenting with different settings on your specific use case to find the right balance.
 
 We ran a large number of tests, comparing different combinations of all the techniques described above (embedding model, use of BM25, use of contextual retrieval, use of a reranker, and total # of top-K results retrieved), all across a variety of different dataset types. Here’s a summary of what we found:
+
+- Embeddings+BM25 is better than embeddings on their own;
+- Voyage and Gemini have the best embeddings of the ones we tested;
+- Passing the top-20 chunks to the model is more effective than just the top-10 or top-5;
+- Adding context to chunks improves retrieval accuracy a lot;
+- Reranking is better than no reranking;
+**All these benefits stack**: to maximize performance improvements, we can combine contextual embeddings (from Voyage or Gemini) with contextual BM25, plus a reranking step, and adding the 20 chunks to the prompt.
 
 We encourage all developers working with knowledge bases to use [our cookbook](https://platform.claude.com/cookbook/capabilities-contextual-embeddings-guide) to experiment with these approaches to unlock new levels of performance.
 

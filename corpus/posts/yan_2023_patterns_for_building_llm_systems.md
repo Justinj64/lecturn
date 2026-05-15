@@ -23,6 +23,8 @@ This write-up is about practical patterns for integrating large language models 
 
 There are seven key patterns. They’re also organized along the spectrum of improving performance vs. reducing cost/risk, and closer to the data vs. closer to the user.
 
+[Evals](#evals-to-measure-performance): To measure performance[RAG](#retrieval-augmented-generation-to-add-knowledge): To add recent, external knowledge[Fine-tuning](#fine-tuning-to-get-better-at-specific-tasks): To get better at specific tasks[Caching](#caching-to-reduce-latency-and-cost): To reduce latency & cost[Guardrails](#guardrails-to-ensure-output-quality): To ensure output quality[Defensive UX](#defensive-ux-to-anticipate--handle-errors-gracefully): To anticipate & manage errors gracefully[Collect user feedback](#collect-user-feedback-to-build-our-data-flywheel): To build our data flywheel
+
 (Also see this addendum on [how to match these LLM patterns to potential problems](/writing/llm-problems/).)
 
 Evaluations are a set of measurements used to assess a model’s performance on a task. They include benchmark data and metrics. From a [HackerNews comment](https://news.ycombinator.com/item?id=36789901):
@@ -34,7 +36,11 @@ Evals enable us to measure how well our system or product is doing and detect an
 
 **There are many benchmarks in the field of language modeling**. Some notable ones are:
 
+: A set of 57 tasks that span elementary math, US history, computer science, law, and more. To perform well, models must possess extensive world knowledge and problem-solving ability.[MMLU](https://arxiv.org/abs/2009.03300): Unified framework to test models via zero/few-shot settings on 200 tasks. Incorporates a large number of evals including BigBench, MMLU, etc.[EleutherAI Eval](https://github.com/EleutherAI/lm-evaluation-harness): Instead of specific tasks and metrics, HELM offers a comprehensive assessment of LLMs by evaluating them across domains. Metrics include accuracy, calibration, robustness, fairness, bias, toxicity, etc. Tasks include Q&A, information retrieval, summarization, text classification, etc.[HELM](https://arxiv.org/abs/2211.09110): Automated evaluation framework which measures how often a strong LLM (e.g., GPT-4) prefers the output of one model over a reference model. Metrics include win rate, bias, latency, price, variance, etc. Validated to have high agreement with 20k human annotations.[AlpacaEval](https://github.com/tatsu-lab/alpaca_eval)
+
 We can group metrics into two categories: context-dependent or context-free.
+
+**Context-dependent**: These take context into account. They’re often proposed for a specific task; repurposing them for other tasks will require some adjustment.**Context-free**: These aren’t tied to the context when evaluating generated output; they only compare the output with the provided gold references. As they’re task agnostic, they’re easier to apply to a wide variety of tasks.
 
 To get a better sense of these metrics (and their potential shortfalls), we’ll explore a few of the commonly used metrics such as BLEU, ROUGE, BERTScore, and MoverScore.
 
@@ -56,7 +62,14 @@ There are several ROUGE variants. ROUGE-N is most similar to BLEU in that it als
 
 \[\text{ROUGE-N} = \frac{\sum_{s_r \in \text{references}} \sum_{n\text{-gram} \in s_r} \text{Count}_{\text{match}} (n\text{-gram})}{\sum_{s_r \in \text{references}} \sum_{n\text{-gram} \in s_r} \text{Count} (n\text{-gram})}\]Other variants include:
 
+- ROUGE-L: This measures the longest common subsequence (LCS) between the output and the reference. It considers sentence-level structure similarity and zeros in on the longest series of co-occurring in-sequence n-grams.
+- ROUGE-S: This measures the skip-bigram between the output and reference. Skip-bigrams are pairs of words that maintain their sentence order regardless of the words that might be sandwiched between them.
+
 ** BERTScore** is an embedding-based metric that uses cosine similarity to compare each token or n-gram in the generated output with the reference sentence. There are three components to BERTScore:
+
+- Recall: Average cosine similarity between each token in the reference and its closest match in the generated output.
+- Precision: Average cosine similarity between each token in the generated output and its nearest match in the reference.
+- F1: Harmonic mean of recall and precision
 
 BERTScore is useful because it can account for synonyms and paraphrasing. Simpler metrics like BLEU and ROUGE can’t do this due to their reliance on exact matches. BERTScore has been shown to have better correlation for tasks such as image captioning and machine translation.
 
@@ -75,6 +88,10 @@ Third, these metrics have **poor reproducibility**. Even for the same metric, [h
 And even with recent benchmarks such as MMLU, **the same model can get significantly different scores based on the eval implementation**. [Huggingface compared the original MMLU implementation](https://huggingface.co/blog/evaluating-mmlu-leaderboard) with the HELM and EleutherAI implementations and found that the same example could have different prompts across various providers.
 
 Furthermore, the evaluation approach differed across all three benchmarks:
+
+- Original MMLU: Compares predicted probabilities on the answers only (A, B, C, D)
+- HELM: Uses the next token probabilities from the model and picks the token with the highest probability, even if it’s
+*not*one of the options. - EleutherAI: Computes probability of the full answer sequence (i.e., a letter followed by the answer text) for each answer. Then, pick answer with highest probability.
 
 As a result, even for the same eval, both absolute scores and model ranking can fluctuate widely depending on eval implementation. This means that model metrics aren’t truly comparable—even for the same eval—unless the eval’s implementation is identical down to minute details like prompts and tokenization. Similarly, the author of QLoRA found MMLU overly sensitive and concluded: “[do not work with/report or trust MMLU scores](https://twitter.com/Tim_Dettmers/status/1673446047266504704)”.
 
@@ -105,6 +122,11 @@ The simplest task is probably classification: If we’re using an LLM for classi
 However, these metrics may not work for more open-ended tasks such as abstractive summarization, dialogue, and others. But collecting human judgments can be slow and expensive. Thus, we may opt to lean on **automated evaluations via a strong LLM**.
 
 Relative to human judgments which are typically noisy (due to differing biases among annotators), LLM judgments tend to be less noisy (as the bias is more systematic) but more biased. Nonetheless, since we’re aware of these biases, we can mitigate them accordingly:
+
+- Position bias: LLMs tend to favor the response in the first position. To mitigate this, we can evaluate the same pair of responses twice while swapping their order. If the same response is preferred in both orders, we mark it as a win; else, it’s a tie.
+- Verbosity bias: LLMs tend to favor longer, wordier responses over more concise ones, even if the latter is clearer and of higher quality. A possible solution is to ensure that comparison responses are similar in length.
+- Self-enhancement bias: LLMs have a slight bias towards their own answers.
+[GPT-4 favors itself with a 10% higher win rate while Claude-v1 favors itself with a 25% higher win rate.](https://arxiv.org/abs/2306.05685)To counter this, don’t use the same LLM for evaluation tasks.
 
 Another tip: Rather than asking an LLM for a direct evaluation (via giving a score), try giving it a reference and asking for a comparison. This helps with reducing noise.
 
@@ -181,6 +203,10 @@ RAG has also been **applied to non-QA tasks such as code generation**. While ** 
 
 To assess the impact of RAG on code generation, they evaluate the model in three settings:
 
+- Retrieval-based: Fetch the top-1 code sample as the prediction
+- Generative-only: Output code based on the decoder only
+- Retrieval-augmented: Append top-1 code sample to encoder input before code generation via the decoder.
+
 As a qualitative example, they showed that retrieved code provides crucial context (e.g., use `urllib3`
 
 for an HTTP request) and guides the generative process towards more correct predictions. In contrast, the generative-only approach returns incorrect output that only captures the concepts of “download” and “compress”.
@@ -197,11 +223,16 @@ From experience with [Obsidian-Copilot](/writing/obsidian-copilot/), I’ve foun
 
 Why not embedding-based search only? While it’s great in many instances, there are situations where it falls short, such as:
 
+- Searching for a person or object’s name (e.g., Eugene, Kaptir 2.0)
+- Searching for an acronym or phrase (e.g., RAG, RLHF)
+- Searching for an ID (e.g.,
 `gpt-3.5-turbo`
 
-, `titan-xlarge-v1.01`
+,`titan-xlarge-v1.01`
 
-)But keyword search has its limitations too. It only models simple word frequencies and doesn’t capture semantic or correlation information. Thus, it doesn’t deal well with synonyms or hypernyms (i.e., words that represent a generalization). This is where combining it with semantic search is complementary.
+)
+
+But keyword search has its limitations too. It only models simple word frequencies and doesn’t capture semantic or correlation information. Thus, it doesn’t deal well with synonyms or hypernyms (i.e., words that represent a generalization). This is where combining it with semantic search is complementary.
 
 In addition, with a conventional search index, we can use metadata to refine results. For example, we can use date filters to prioritize newer documents or narrow our search to a specific time period. And if the search is related to e-commerce, filters on average rating or categories are helpful. Finally, having metadata is handy for downstream ranking, such as prioritizing documents that are cited more, or boosting products by their sales volume.
 
@@ -239,13 +270,22 @@ To retrieve documents with low latency at scale, we use approximate nearest neig
 
 ANN embedding indices are data structures that let us do ANN searches efficiently. At a high level, they build partitions over the embedding space so we can quickly zoom in on the specific space where the query vector is. Some popular techniques include:
 
+[Locality Sensitive Hashing](https://en.wikipedia.org/wiki/Locality-sensitive_hashing)(LSH): The core idea is to create hash functions so that similar items are likely to end up in the same hash bucket. By only needing to check the relevant buckets, we can perform ANN queries efficiently.[Facebook AI Similarity Search](https://github.com/facebookresearch/faiss)(FAISS): It uses a combination of quantization and indexing for efficient retrieval, supports both CPU and GPU, and can handle billions of vectors due to its efficient use of memory.[Hierarchical Navigable Small Worlds](https://github.com/nmslib/hnswlib)(HNSW): Inspired by “six degrees of separation”, it builds a hierarchical graph structure that embodies the small world phenomenon. Here, most nodes can be reached from any other node via a minimum number of hops. This structure allows HNSW to initiate queries from broader, coarser approximations and progressively narrow the search at lower levels.[Scalable Nearest Neighbors](https://github.com/google-research/google-research/tree/master/scann)(ScaNN): It has a two-step process. First, coarse quantization reduces the search space. Then, fine-grained search is done within the reduced set. Best recall/latency trade-off I’ve seen.
+
 When evaluating an ANN index, some factors to consider include:
+
+- Recall: How does it fare against exact nearest neighbors?
+- Latency/throughput: How many queries can it handle per second?
+- Memory footprint: How much RAM is required to serve an index?
+- Ease of adding new items: Can new items be added without having to reindex all documents (LSH) or does the index need to be rebuilt (ScaNN)?
 
 No single framework is better than all others in every aspect. Thus, start by defining your functional and non-functional requirements before benchmarking. Personally, I’ve found ScaNN to be outstanding in the recall-latency trade-off (see benchmark graph [here](/writing/real-time-recommendations/#how-to-design-and-implement-an-mvp)).
 
 Fine-tuning is the process of taking a pre-trained model (that has already been trained with a vast amount of data) and further refining it on a specific task. The intent is to harness the knowledge that the model has already acquired during its pre-training and apply it to a specific task, usually involving a smaller, task-specific, dataset.
 
 The term “fine-tuning” is used loosely and can refer to several concepts such as:
+
+**Continued pre-training**: With domain-specific data, apply the same pre-training regime (next token prediction, masked language modeling) on the base model.**Instruction fine-tuning**: The pre-trained (base) model is fine-tuned on examples of instruction-output pairs to follow instructions, answer questions, be waifu, etc.**Single-task fine-tuning**: The pre-trained model is honed for a narrow and specific task such as toxicity detection or summarization, similar to BERT and T5.**Reinforcement learning with human feedback (RLHF)**: This combines instruction fine-tuning with reinforcement learning. It requires collecting human preferences (e.g., pairwise comparisons) which are then used to train a reward model. The reward model is then used to further fine-tune the instructed LLM via RL techniques such as proximal policy optimization (PPO).
 
 We’ll mainly focus on single-task and instruction fine-tuning here.
 
@@ -307,7 +347,11 @@ As a result, QLoRA reduces the average memory requirements for fine-tuning a 65B
 
 The first step is to **collect demonstration data/labels**. These could be for straightforward tasks such as document classification, entity extraction, or summarization, or they could be more complex such as Q&A or dialogue. Some ways to collect this data include:
 
+**Via experts or crowd-sourced human annotators**: While this is expensive and slow, it usually leads to higher-quality data with[good guidelines](/writing/labeling-guidelines/).**Via user feedback**: This can be as simple as asking users to select attributes that describe a product, rating LLM responses with thumbs up or down (e.g., ChatGPT), or logging which images users choose to download (e.g., Midjourney).**Query larger open models with permissive licenses**: With prompt engineering, we might be able to elicit reasonable demonstration data from a larger model (Falcon 40B Instruct) that can be used to fine-tune a smaller model.**Reuse open-source data**: If your task can be framed as a natural language inference (NLI) task, we could fine-tune a model to perform NLI using[MNLI data](https://cims.nyu.edu/~sbowman/multinli/). Then, we can continue fine-tuning the model on internal data to classify inputs as entailment, neutral, or contradiction.
+
 Note: Some LLM terms prevent users from using their output to develop other models.
+
+[OpenAI Terms of Use](https://openai.com/policies/terms-of-use)(Section 2c, iii): You may not use output from the Services to develop models that compete with OpenAI.[LLaMA 2 Community License Agreement](https://ai.meta.com/llama/license/)(Section 1b-v): You will not use the Llama Materials or any output or results of the Llama Materials to improve any other large language model (excluding Llama 2 or derivative works thereof).
 
 The next step is to **define evaluation metrics**. We’ve discussed this in a [previous section](#evals-to-measure-performance-scalably).
 
@@ -333,9 +377,14 @@ An example of caching for LLMs is [GPTCache](https://github.com/zilliztech/GPTCa
 
 When a new request is received:
 
+- Embedding generator: This embeds the request via various models such as OpenAI’s
 `text-embedding-ada-002`
 
-, FastText, Sentence Transformers, and more.Redis also shared a [similar example](https://www.youtube.com/live/9VgpXcfJYvw?feature=share&t=1517), mentioning that some teams go as far as precomputing all the queries they anticipate receiving. Then, they set a similarity threshold on which queries are similar enough to warrant a cached response.
+, FastText, Sentence Transformers, and more. - Similarity evaluator: This computes the similarity of the request via the vector store and then provides a distance metric. The vector store can either be local (FAISS, Hnswlib) or cloud-based. It can also compute similarity via a model.
+- Cache storage: If the request is similar, the cached response is fetched and served.
+- LLM: If the request isn’t similar enough, it gets passed to the LLM which then generates the result. Finally, the response is served and cached for future use.
+
+Redis also shared a [similar example](https://www.youtube.com/live/9VgpXcfJYvw?feature=share&t=1517), mentioning that some teams go as far as precomputing all the queries they anticipate receiving. Then, they set a similarity threshold on which queries are similar enough to warrant a cached response.
 
 **We should start with having a good understanding of user request patterns**. This allows us to design the cache thoughtfully so it can be applied reliably.
 
@@ -346,6 +395,8 @@ Now, bringing it back to LLM responses. Imagine we get a request for a summary o
 We also need to **consider if caching is effective for the usage pattern.** One way to quantify this is via the cache hit rate (percentage of requests served directly from the cache). If the usage pattern is uniformly random, the cache would need frequent updates. Thus, the effort to keep the cache up-to-date could negate any benefit a cache has to offer. On the other hand, if the usage follows a power law where a small proportion of unique requests account for the majority of traffic (e.g., search queries, product views), then caching could be an effective strategy.
 
 Beyond semantic similarity, we could also explore caching based on:
+
+**Item IDs:**This applies when we pre-compute[summaries of product reviews](https://www.cnbc.com/2023/06/12/amazon-is-using-generative-ai-to-summarize-product-reviews.html)or generate a summary for an entire movie trilogy.**Pairs of Item IDs:**Such as when we generate comparisons between two movies. While this appears to be \(O(N^2)\), in practice, a small number of combinations drive the bulk of traffic, such as comparison between popular movies in a series or genre.**Constrained input:**Such as variables like movie genre, director, or lead actor. For example, if a user is looking for movies by a specific director, we could execute a structured query and run it through an LLM to frame the response more eloquently. Another example is[generating code based on drop-down options](https://cheatlayer.com)—if the code has been verified to work, we can cache it for reliable reuse.
 
 Also, **caching doesn’t only have to occur on-the-fly.** As Redis shared, we can pre-compute LLM generations offline or asynchronously before serving them. By serving from a cache, we shift the latency from generation (typically seconds) to cache lookup (milliseconds). Pre-computing in batch can also help reduce cost relative to serving in real-time.
 
@@ -362,6 +413,11 @@ Second, they provide an additional layer of safety and maintain quality control 
 **A more common approach is to validate the output.** An example is the [Guardrails package](https://github.com/ShreyaR/guardrails). It allows users to add structural, type, and quality requirements on LLM outputs via Pydantic-style validation. And if the check fails, it can trigger corrective action such as filtering on the offending output or regenerating another response.
 
 Most of the validation logic is in [ validators.py](https://github.com/ShreyaR/guardrails/blob/main/guardrails/validators.py). It’s interesting to see how they’re implemented. Broadly speaking, its validators fall into the following categories:
+
+- Single output value validation: This includes ensuring that the output (i) is one of the predefined choices, (ii) has a length within a certain range, (iii) if numeric, falls within an expected range, and (iv) is a complete sentence.
+- Syntactic checks: This includes ensuring that generated URLs are valid and reachable, and that Python and SQL code is bug-free.
+- Semantic checks: This verifies that the output is aligned with the reference document, or that the extractive summary closely matches the source document. These checks can be done via cosine similarity or fuzzy matching techniques.
+- Safety checks: This ensures that the generated output is free of inappropriate language or that the quality of translated text is high.
 
 Nvidia’s [NeMo-Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) follows a similar principle but is designed to guide LLM-based conversational systems. Rather than focusing on syntactic guardrails, it emphasizes semantic ones. This includes ensuring that the assistant steers clear of politically charged topics, provides factually correct information, and can detect jailbreaking attempts.
 
@@ -397,19 +453,34 @@ Machine learning and LLMs aren’t perfect—they can produce inaccurate output.
 
 Defensive UX can help mitigate the above by providing:
 
+**Increased accessibility**: By helping users understand how ML/LLM features work and their limitations, defensive UX makes it more accessible and user-friendly.**Increased trust**: When users see that the feature can handle difficult scenarios gracefully and doesn’t produce harmful output, they’re likely to trust it more.**Better UX**: By designing the system and UX to handle ambiguous situations and errors, defensive UX paves the way for a smoother, more enjoyable user experience.
+
 To learn more about defensive UX, we can look at Human-AI guidelines from Microsoft, Google, and Apple.
 
 **Microsoft’s Guidelines for Human-AI Interaction** is based on a survey of 168 potential guidelines. These were collected from internal and external industry sources, academic literature, and public articles. After combining guidelines that were similar, filtering guidelines that were too vague or too specific or not AI-specific, and a round of heuristic evaluation, they narrowed it down to 18 guidelines.
 
 These guidelines follow a certain style: Each one is a succinct action rule of 3 - 10 words, beginning with a verb. Each rule is accompanied by a one-liner that addresses potential ambiguities. They are organized based on their likely application during user interaction:
 
+- Initially: Make clear what the system can do (G1), make clear how well the system can do what it can do (G2)
+- During interaction: Time services based on context (G3), mitigate social biases (G6)
+- When wrong: Support efficient dismissal (G8), support efficient correction (G9)
+- Over time: Learn from user behavior (G13), provide global controls (G17)
+
 **Google’s People + AI Guidebook** is rooted in data and insights drawn from Google’s product team and academic research. In contrast to Microsoft’s guidelines which are organized around the user, Google organizes its guidelines into concepts that a developer needs to keep in mind.
 
 There are 23 patterns grouped around common questions that come up during the product development process, including:
 
+- How do I get started with human-centered AI: Determine if the AI adds value, invest early in good data practices (e.g., evals)
+- How do I onboard users to new AI features: Make it safe to explore, anchor on familiarity, automate in phases
+- How do I help users build trust in my product: Set the right expectations, be transparent, automate more when the risk is low.
+
 **Apple’s Human Interface Guidelines for Machine Learning** differs from the bottom-up approach of academic literature and user studies. Instead, its primary source is practitioner knowledge and experience. Thus, it doesn’t include many references or data points, but instead focuses on Apple’s longstanding design principles. This results in a unique perspective that distinguishes it from the other two guidelines.
 
 The document focuses on how Apple’s design principles can be applied to ML-infused products, emphasizing aspects of UI rather than model functionality. It starts by asking developers to consider the role of ML in their app and work backwards from the user experience. This includes questions such as whether ML is:
+
+- Critical or complementary: For example, Face ID cannot work without ML but the keyboard can still work without QuickType.
+- Proactive or reactive: Siri Suggestions are proactive while autocorrect is reactive.
+- Dynamic or static: Recommendations are dynamic while object detection in Photos only improves with each iOS release.
 
 It then delves into several patterns, split into inputs and outputs of a system. Inputs focus on explicit feedback, implicit feedback, calibration, and corrections. This section guides the design for how AI products request and process user data and interactions. Outputs focus on mistakes, multiple options, confidence, attribution, and limitations. The intent is to ensure the model’s output is presented in a comprehensible and useful manner.
 
@@ -418,6 +489,10 @@ The differences between the three guidelines are insightful. Google has more emp
 Here are some patterns based on the guidelines above. (Disclaimer: I’m not a designer.)
 
 **Set the right expectations.** This principle is consistent across all three guidelines:
+
+- Microsoft: Make clear how well the system can do what it can do (help the user understand how often the AI system may make mistakes)
+- Google: Set the right expectations (be transparent with your users about what your AI-powered product can and cannot do)
+- Apple: Help people establish realistic expectations (describe the limitation in marketing material or within the feature’s context)
 
 This can be as simple as adding a brief disclaimer above AI-generated results, like those of Bard, or highlighting our app’s limitations on its landing page, like how ChatGPT does it.
 
@@ -428,6 +503,10 @@ By being transparent about our product’s capabilities and limitations, we help
 For example, if a user is navigating our site and a chatbot pops up asking if they need help, it should be easy for the user to dismiss the chatbot. This ensures the chatbot doesn’t get in the way, especially on devices with smaller screens. Similarly, GitHub Copilot allows users to conveniently ignore its code suggestions by simply continuing to type. While this may reduce usage of the AI feature in the short term, it prevents it from becoming a nuisance and potentially reducing customer satisfaction in the long term.
 
 **Provide attribution.** This is listed in all three guidelines:
+
+- Microsoft: Make clear why the system did what it did (enable the user to access an explanation of why the AI system behaved as it did)
+- Google: Add context from human sources (help users appraise your recommendations with input from 3rd-party sources)
+- Apple: Consider using attributions to help people distinguish among results
 
 Citations are becoming an increasingly common design element. Take BingChat for example. When we make a query, it includes citations, usually from reputable sources, in its responses. This not only shows where the information came from, but also allows users to assess the quality of the sources. Similarly, imagine we’re using an LLM to explain why a user might like a product. Alongside the LLM-generated explanation, we could include a quote from an actual review or mention the product rating.
 
@@ -453,6 +532,10 @@ In addition, the feedback loop helps us **evaluate our system’s overall perfor
 
 **Make it easy for users to provide feedback.** This is echoed across all three guidelines:
 
+- Microsoft: Encourage granular feedback (enable the user to provide feedback indicating their preferences during regular interaction with the AI system)
+- Google: Let users give feedback (give users the opportunity for real-time teaching, feedback, and error correction)
+- Apple: Provide actionable information your app can use to improve the content and experience it presents to people
+
 ChatGPT is one such example. Users can indicate thumbs up/down on responses, or choose to regenerate a response if it’s really bad or unhelpful. This is useful feedback on human preferences which can then be used to fine-tune LLMs.
 
 Midjourney is another good example. After images are generated, users can generate a new set of images (negative feedback), tweak an image by asking for a variation (positive feedback), or upscale and download the image (strong positive feedback). This enables Midjourney to gather rich comparison data on the outputs generated.
@@ -464,6 +547,8 @@ Copilot-like assistants are a prime example. Users indicate whether a suggestion
 Chatbots, such as ChatGPT and BingChat, are another example. How has daily usage changed over time? If the product is sticky, it suggests that users like it. Also, how long is the average conversation? This can be tricky to interpret: Is a longer conversation better because the conversation was engaging and fruitful? Or is it worse because it took the user longer to get what they needed?
 
 Apart from the seven patterns above, there are other patterns in machine learning that are also relevant to LLM systems and products. They include:
+
+[Data flywheel](/writing/more-patterns/#data-flywheel-to-continuously-improve--build-a-moat): Continuous data collection improves the model and leads to a better user experience. This, in turn, promotes more usage which provides more data to further evaluate and fine-tune models, creating a virtuous cycle.[Cascade](/writing/more-patterns/#cascade-to-split-a-problem-into-smaller-problems): Rather than assigning a single, complex task to the LLM, we can simplify and break it down so it only has to handle tasks it excels at, such as reasoning or communicating eloquently. RAG is an example of this. Instead of relying on the LLM to retrieve and rank items based on its internal knowledge, we can augment LLMs with external knowledge and focus on applying the LLM’s reasoning abilities.[Monitoring](/writing/practical-guide-to-maintaining-machine-learning/#monitor-models-for-misbehaviour-when-retraining): This helps demonstrate the value added by the AI system, or the lack of it. Someone shared an anecdote of running an LLM-based customer support solution in prod for two weeks before discontinuing it—an A/B test showed that losses were 12x more when using an LLM as a substitute for their support team!
 
 (Read more about design patterns for [machine learning code](/writing/design-patterns/) and [systems](/writing/more-patterns/).)
 
@@ -629,5 +714,9 @@ url = {https://eugeneyan.com/writing/llm-patterns/}
 }
 ```
 
+
+Share on:
+
+Browse related tags: [
 
 Join **11,800+** readers getting updates on machine learning, RecSys, LLMs, and engineering.

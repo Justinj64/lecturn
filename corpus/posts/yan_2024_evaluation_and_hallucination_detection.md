@@ -16,6 +16,8 @@ If you’ve ran off-the-shelf evals for your tasks, you may have found that most
 
 To save us some time, I’m sharing some evals I’ve found useful. The goal is to spend less time figuring out evals so we can spend more time shipping to users. We’ll focus on simple, common tasks like classification/extraction, summarization, and translation. (Although classification evals are basic, having a good understanding helps with the meta problem of evaluating evals.) We’ll also discuss how to measure copyright regurgitation and toxicity.
 
+[Classification](#classificationextraction-roc-pr-class-distributions): Recall, precision, ROC-AUC, PR-AUC, separation of distributions[Summarization](#summarization-consistency-relevance-length): Consistency via NLI, relevance via reward model, length checks[Translation](#translation-statistical--learned-evals-for-quality): Quality measures via chrF, BLEURT, COMET, COMETKiwi[Copyright](#copyright-regurgitation--near-exact-reproduction): Exact regurgitation, near-exact reproduction[Toxicity](#toxicity-realtoxicityprompts--bold): Proportion of toxic generations on regular and toxic prompts
+
 At the end, we’ll discuss [the role of human evaluation](#nonetheless-we-still-need-human-evaluation) and how to [calibrate the evaluation bar](#calibrate-your-evaluation-bar-to-the-level-of-risk) to balance between potential benefits and risks, and mitigate Innovator’s Dilemma.
 
 Note: I’ve tried to make this accessible for folks who don’t have a data science or machine learning background. Thus, it starts with the basics of classification eval metrics. Feel free to skip any sections you’re already familiar with.
@@ -49,6 +51,11 @@ We can apply LLMs for classification by providing a document and prompting the L
 
 For categorical outputs, we can compute aggregate statistics such as recall, precision, false positives/negatives. This also applies to extraction: What proportion of ground truth attributes were extracted (recall)? What proportion of extracted attributes were correct (precision)? The [Wikipedia page](https://en.wikipedia.org/wiki/Precision_and_recall) is a good reference. In a nutshell:
 
+- Recall: Proportion of true positives that were correctly identified. If there were 100 positive instances in our data and the model identified 80, recall = 0.8
+- Precision: Proportion of the model’s positive predictions that were correct. If the model predicted positive 50 times but only 30 were truly positive, precision = 0.6
+- False positive: Model predicted positive but actually negative
+- False negative: Model predicted negative but actually positive
+
 IMHO, accuracy is too coarse a metric to be useful. We’d need to separate it into recall and precision at minimum, ideally across thresholds.
 
 
@@ -79,6 +86,11 @@ Now that we’ve the basics of evaluating classification tasks, we can discuss e
 Abstractive summarization is the task of generating concise summaries that capture the key ideas in a source document. Unlike extractive summarization which lifts entire sentences from the original text, abstractive summarization involves rephrasing and condensing information to create a newer, shorter version. It requires understanding the content, identifying important points, and not introducing hallucination defects.
 
 To evaluate abstractive summaries, [Kryscinski et al. (2019)](https://arxiv.org/abs/1908.08960) proposed four key dimensions:
+
+- Fluency: Are sentences in the summary well-formed and easy to read? We want to avoid grammatical errors, random capitalization, etc.
+- Coherence: Does the summary as a whole make sense? It should be well-structured and logically organized, and not just a jumble of information.
+- Consistency: Does the summary accurately reflect the content of the source document? We want to ensure there’s no new or contradictory information added.
+- Relevance: Does the summary focus on the most important aspects of the source document? It should include key points and exclude less relevant details.
 
 Most modern language models can generate grammatically correct and readable sentences, making fluency less of a concern. A [recent benchmark](https://arxiv.org/abs/2301.13848) excluded fluency as an eval for this reason. Coherence is also becoming less of an issue, especially for short summaries containing a few sentences or less. This leaves us with factual consistency and relevance, which we can frame as binary classification and reuse the metrics from above.
 
@@ -132,6 +144,9 @@ In Stiennon et al. (2020), they updated their summarization language model to re
 
 **A related task is opinion summarization**. This is where we generate a summary that captures the key aspects and associated sentiments from a set of opinions, such as customer feedback, social media, or product reviews. We adapt the metrics of consistency and relevancy for:
 
+- Sentiment consistency: For each key aspect, does the summary accurately reflect the overall sentiment expressed? For example, if most reviews praise the battery life but criticize the camera quality, the summary should capture this.
+- Aspect relevance: Does the summary cover the main topics discussed? If many reviews raise concerns about battery life and camera quality, these points should be included in the summary.
+
 The [OpinSummEval](https://arxiv.org/abs/2310.18122) paper explored several evals and found two to be most effective: [BARTScore](https://arxiv.org/abs/2106.11520) and Question-Answering (QA) based evals. It uses the test set from the [Yelp dataset](https://arxiv.org/abs/1810.05739) which contains 100 instances of (i) eight reviews of the same product/service and (ii) one human-written review summary.
 
 **BARTScore treats evaluation as a text-generation task.** It uses pre-trained [BART](https://arxiv.org/abs/1910.13461) to compute the conditional probability of the summary $y$ given the reviews $x$. The score is essentially the log-likelihood of generating the summary from the reviews.
@@ -141,6 +156,11 @@ $y_t$ represents the token at position $t$. Weights $w_t$ can be used to emphasi
 They tried a few variants of BARTScore and found $\text{BARTScore}_{rev→hyp}$ to perform the best. First, they encode the reviews ($rev$) and summary ($hyp$) via the encoder. Then, they use the encoded reviews as the source sequence and the encoded summary as the target sequence for the decoder. The decoder computes the probability of generating each summary token given the reviews and previously generated summary tokens. The probabilities are then summed and normalized by the length of the summary to get the final score.
 
 **QA-based evals take a more roundabout approach.** The idea is to generate questions about the reviews, answer them based on the summary, and then compare the answers to the original reviews. This typically involves several steps such as:
+
+- Selecting key phrases or sentences from the reviews as “answers”
+- Generating questions based on these answers and the review text
+- Answering questions based on the summary via a QA model
+- Comparing the QA model’s answers to the original answer
 
 The intuition here is that a good summary should contain the information needed to answer relevant questions about the reviews. If the QA model can produce similar answers from the summary as from the reviews themselves, this suggests that the summary captured the key aspects and sentiments correctly.
 
@@ -152,6 +172,10 @@ While QA evals did well in OpinSummEval, IMHO, they’re too complex. We’d nee
 Machine translation is the task of automatically converting text from one language to another. The goal is to preserve the original meaning and intent while producing translations that are fluent and grammatically correct in the target language.
 
 There are countless evals for machine translation. To narrow it down, we can look to the annual [Workshop on Machine Translation (WMT)](https://www2.statmt.org/wmt23/) for guidance. We’ll focus on three reference-based evals (which compare the machine translation to a human-written reference translation) and one reference-free eval:
+
+- Statistical metric: chrF
+- Learned metric: BLEURT, COMET
+- Learned metric (reference-free): COMETKiwi
 
 What about BLEU (Bilingual Evaluation Understudy)? While it’s the most used translation eval, it’s also bottom of the leaderboard at
 
@@ -168,6 +192,10 @@ The idea behind chrF is to compute the precision and recall of character n-grams
 ** BLEURT was introduced by Google Research in 2020** as an improvement over BLEU. It’s built on the popular
 
 The model is finetuned via two steps. In the first step (which is unfortunately named pre-training in the paper), they generate 6.5M synthetic sentence pairs by randomly perturbing 1.8M sentences from Wikipedia. There were three forms of perturbations:
+
+- Mask-filling: Insert masks at random positions and sequences, similar to BERT’s masked language modeling task. This teaches the model to fill in missing words.
+- Backtranslation: Translate sentences from English to another language and then back to English via an existing translation model. The goal is to create paraphrases that preserve the original meaning while varying the surface form.
+- Word dropout: Randomly remove words from the sentence. This teaches the model to deal with incomplete or noisy input.
 
 Via these perturbations, BLEURT’s first finetuning phase exposes the model to synthetic translations with errors and variations. The model is then trained to predict a combination of automated metrics (below) for the synthetic pairs. The intuition is that by learning from multiple metrics, BLEURT can capture their strengths while avoiding their weaknesses. This step is costly and typically skipped by loading a checkpoint that has completed it.
 
@@ -235,6 +263,9 @@ To evaluate copyright regurgitation, HELM compiled prompts from three sources: (
 
 To quantify the overlap between model outputs and reference texts, they computed:
 
+- Exact regurgitation: The length of the longest common subsequence between the output and reference, normalized by the length of the input prompt
+- Near-exact reproduction: The edit distance and edit similarity between the output and reference, normalized by the length of the input prompt.
+
 If you have an LLM app or feature that may return copyright material (e.g., codegen, media) and want to assess the risk, try HELM’s approach above. The first lines of Harry Potter will almost always work, given how common it is on the internet. Thus, use something from the middle of the books instead.
 
 
@@ -263,9 +294,20 @@ If you’re concerned that your LLM application or feature may return toxic or b
 
 And even after we’ve collected an initial set of labels as ground truth or to finetune evaluation models, we’ll want to collect more labels—via active learning—to continuously improve. Taking the example of a classification eval, we can select instances to annotate based on the need to:
 
+- Increase precision: Select instances that the model predicts as positive with high probability and annotate them to identify false positives
+- Increase recall: Select instances that the model predicts have low probability and check for false negatives
+- Increase confidence: Select instances where the model is unsure (e.g., probability between 0.4 to 0.6) and collect human labels for finetuning
+
 This can also be applied to evals like factual consistency and relevance since they can be binary decisions. Another reason why simplifying evals to a binary metric helps.
 
 If you’re looking for guidelines for human annotators, [Chang et al.](https://arxiv.org/abs/2307.03109) suggest some key dimensions to consider:
+
+- Accuracy: Is the generated text factually correct and aligned with known information? This is closely tied to factual consistency.
+- Relevance: Is the output appropriate and directly applicable to the task and input?
+- Fluency: Is the text grammatically correct and readable? With modern LLMs, this is less of an issue than it used to be.
+- Transparency: Does the model communicate its thought process and reasoning? Techniques like chain-of-thought help with this.
+- Safety: Are there potential harms or unintended consequences from the generated text? This includes toxicity, bias, and misinformation.
+- Human alignment: To what extent does the model’s output align with human values, preferences, and expectations?
 
 **We should be pragmatic when setting our evaluation bar.** It’s tempting to aim for near-perfect scores on every eval. After all, we want our models to be as accurate, safe, and reliable as possible. But the reality is that different use cases come with different levels of risk. Thus, our evaluation standards should be calibrated accordingly.
 
@@ -283,13 +325,58 @@ Don’t be paralyzed by the need for perfection or zero risk, and as a result, s
 
 Having reliable evals is essential for building good LLM applications, and it doesn’t have to be painful. Here’s what I’d suggest for some task-specific evals:
 
+- Classification: Recall, Precision, ROC-AUC, Separation of Distributions
+- Summarization: Factual consistency via NLI, Relevance via reward modeling
+- Translation: Measure quality via chrF, BLEURT, COMET, COMETKiwi
+- Toxicity: Test with adversarial prompts from RealToxicityPrompts and BOLD
+- Copyright: Test with text from popular books and code
+
 I hope you found this write-up helpful in helping to evaluate your classification, summarization, and translation applications, as well as to assess the risk of copyright regurgitation and toxicity. Do you know of other resources for evaluating LLM-based applications? [Please reach out!](https://twitter.com/eugeneyan)
 
 Thanks to [Hamel Husain](https://twitter.com/HamelHusain), [Vibhu Sapra](https://twitter.com/vibhuuuus), [Freddie Vargus](https://twitter.com/freddie_v4), [Shreya Shankar](https://twitter.com/sh_reya), [Nihit Desai](https://twitter.com/nihit_desai), [Bryan Bischof](https://twitter.com/BEBischof), and [Jason Liu](https://twitter.com/jxnlco) for providing feedback on drafts and/or tolerating me whenever I ~~rant~~ talk about evals.
 
 By the way, if you want to learn more about evals, my friends Hamel and Shreya are hosting their *final* cohort of “AI Evals for Engineers and PMs” in July. Here’s a [35% discount code](https://maven.com/parlance-labs/evals?promoCode=eugene-is-all-you-need).
 
+[Retrieval and end-to-end evaluation for RAG](https://github.com/run-llama/ai-engineer-workshop/blob/main/notebooks/02_evaluation.ipynb)[Evaluating the](https://github.com/jxnl/n-levels-of-rag)*n*levels of RAG[Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/)
+
+- Kryściński, Wojciech, et al.
+[“Neural text summarization: A critical evaluation.”](https://arxiv.org/abs/1908.08960)*arXiv preprint arXiv:1908.08960*(2019). - Zhang, Tianyi, et al.
+[“Benchmarking large language models for news summarization.”](https://arxiv.org/abs/2301.13848)*Transactions of the Association for Computational Linguistics*12 (2024): 39-57. - Liu, Yang, et al.
+[“G-Eval: Nlg evaluation using gpt-4 with better human alignment.”](https://arxiv.org/abs/2303.16634)*arXiv preprint arXiv:2303.16634*(2023). - Li, Junyi, et al.
+[“HaluEval: A large-scale hallucination evaluation benchmark for large language models.”](https://arxiv.org/abs/2305.11747)*arXiv preprint arXiv:2305.11747*(2023). - Tam, Derek, et al.
+[“Evaluating the factual consistency of large language models through summarization.”](https://arxiv.org/abs/2211.08412v1)*arXiv preprint arXiv:2211.08412*(2022). - Krishna, Kundan, et al.
+[“USB: A unified summarization benchmark across tasks and domains.”](https://arxiv.org/abs/2305.14296)*arXiv preprint arXiv:2305.14296*(2023). - Stiennon, Nisan, et al.
+[“Learning to summarize with human feedback.”](https://arxiv.org/abs/2009.01325)*Advances in Neural Information Processing Systems*33 (2020): 3008-3021. - Wu, Jeff, et al.
+[“Recursively summarizing books with human feedback.”](https://arxiv.org/abs/2109.10862)*arXiv preprint arXiv:2109.10862*(2021). - Shen, Yuchen, and Xiaojun Wan.
+[“OpinSummEval: Revisiting automated evaluation for opinion summarization.”](https://arxiv.org/abs/2310.18122)*arXiv preprint arXiv:2310.18122*(2023). - Chu, Eric, and Peter Liu.
+[“MeanSum: a neural model for unsupervised multi-document abstractive summarization.”](https://arxiv.org/abs/1810.05739)International conference on machine learning. PMLR, 2019. - Yuan, Weizhe, Graham Neubig, and Pengfei Liu.
+[“BARTScore: Evaluating generated text as text generation.”](https://arxiv.org/abs/2106.11520)*Advances in Neural Information Processing Systems*34 (2021): 27263-27277. - Lewis, Mike, et al.
+[“BART: Denoising sequence-to-sequence pre-training for natural language generation, translation, and comprehension.”](https://arxiv.org/abs/1910.13461)*arXiv preprint arXiv:1910.13461*(2019). - Linkov, Denys,
+[“How much do ChatGPT versions affect real world performance?”](https://www.voiceflow.com/blog/how-much-do-chatgpt-versions-affect-real-world-performance)*https://voiceflow.com*, (2024). - Freitag, Markus, et al.
+[“Results of the WMT21 metrics shared task: Evaluating metrics with expert-based human evaluations on TED and news domain.”](https://aclanthology.org/2021.wmt-1.73/)*Proceedings of the Sixth Conference on Machine Translation*. 2021. - Freitag, Markus, et al.
+[“Results of WMT22 metrics shared task: Stop using BLEU–neural metrics are better and more robust.”](https://aclanthology.org/2022.wmt-1.2/)*Proceedings of the Seventh Conference on Machine Translation (WMT)*. 2022. - Freitag, Markus, et al.
+[“Results of WMT23 metrics shared task: Metrics might be guilty but references are not innocent.”](https://aclanthology.org/2023.wmt-1.51/)*Proceedings of the Eighth Conference on Machine Translation*. 2023. - Popović, Maja.
+[“chrF: character n-gram F-score for automatic MT evaluation.”](https://aclanthology.org/W15-3049/)*Proceedings of the tenth workshop on statistical machine translation*. 2015. - Post, Matt.
+[“A call for clarity in reporting BLEU scores.”](https://arxiv.org/abs/1804.08771)*arXiv preprint arXiv:1804.08771*(2018). - Sellam, Thibault, Dipanjan Das, and Ankur P. Parikh.
+[“BLEURT: Learning robust metrics for text generation.”](https://arxiv.org/abs/2004.04696)*arXiv preprint arXiv:2004.04696*(2020). - Devlin, Jacob, et al.
+[“BERT: Pre-training of deep bidirectional transformers for language understanding.”](https://arxiv.org/abs/1810.04805)*arXiv preprint arXiv:1810.04805*(2018). - Rei, Ricardo, et al.
+[“COMET: A neural framework for MT evaluation.”](https://arxiv.org/abs/2009.09025)*arXiv preprint arXiv:2009.09025*(2020). - Liu, Yinhan, et al.
+[“RoBERTa: A robustly optimized BERT pretraining approach.”](https://arxiv.org/abs/1907.11692)*arXiv preprint arXiv:1907.11692*(2019). - Rei, Ricardo, et al.
+[“COMET-22: Unbabel-IST 2022 submission for the metrics shared task.”](https://aclanthology.org/2022.wmt-1.52/)*Proceedings of the Seventh Conference on Machine Translation (WMT)*. 2022. - Guerreiro, Nuno M., et al.
+[“xCOMET: Transparent machine translation evaluation through fine-grained error detection.”](https://arxiv.org/abs/2310.10482)*arXiv preprint arXiv:2310.10482*(2023). - Rei, Ricardo, et al.
+[“CometKiwi: IST-unbabel 2022 submission for the quality estimation shared task.”](https://arxiv.org/abs/2209.06243)*arXiv preprint arXiv:2209.06243*(2022). - Fomicheva, Marina, et al.
+[“MLQE-PE: A multilingual quality estimation and post-editing dataset.”](https://arxiv.org/abs/2010.04480)*arXiv preprint arXiv:2010.04480*(2020). - Liang, Percy, et al.
+[“Holistic evaluation of language models.”](https://arxiv.org/abs/2211.09110)*arXiv preprint arXiv:2211.09110*(2022). - Gehman, Samuel, et al.
+[“RealToxicityPrompts: Evaluating neural toxic degeneration in language models.”](https://arxiv.org/abs/2009.11462)*arXiv preprint arXiv:2009.11462*(2020). - Dhamala, Jwala, et al.
+[“Bold: Dataset and metrics for measuring biases in open-ended language generation.”](https://arxiv.org/abs/2101.11718)*Proceedings of the 2021 ACM conference on fairness, accountability, and transparency*. 2021. - Pozzobon, Luiza, et al.
+[“On the challenges of using black-box apis for toxicity evaluation in research.”](https://arxiv.org/abs/2304.12397)arXiv preprint arXiv:2304.12397 (2023). - Chang, Yupeng, et al.
+[“A survey on evaluation of large language models.”](https://arxiv.org/abs/2307.03109)*ACM Transactions on Intelligent Systems and Technology*(2023).
+
 The most commonly used summarization evals compare generated summaries to a gold reference summary via n-gram matching (e.g., ROUGE, METEOR) or embedding similarity (e.g., BERTScore, MoverScore). **However, I’ve found them impractical because:**
+
+- They require gold references which are a bottleneck: Thus, we need to collect gold summaries for each new summarization task. This typically involves writing guidelines, training annotators, and continuously auditing for quality.
+- References may be poor quality:
+[Fabbri et al (2021)](https://arxiv.org/abs/2007.12626)and[Zhang et al. (2023)](https://arxiv.org/abs/2301.13848)found generated summaries to surpass reference summaries in CNN/DailyMail and XSUM. Thus, it does not make sense to evaluate generations against poorer references. - Poor separation of distributions: While academic papers often report decent correlation between these metrics and human annotations, empirically, their variance from ground truth is too high and the separation of distributions is too close to be used.
 
 A commonly cited LLM-based eval is [G-Eval](https://arxiv.org/abs/2303.16634). It applies LLMs with chain-of-thought and a form-filling paradigm to evaluate summaries. However, while its reported Spearman correlation with human judgements surpasses previous SOTA evaluators, empirically, it’s unreliable (low recall), costly (at least double the token count), and has poor sensitivity (to nuanced inconsistencies).
 
@@ -380,5 +467,9 @@ url = {https://eugeneyan.com/writing/evals/}
 }
 ```
 
+
+Share on:
+
+Browse related tags: [
 
 Join **11,800+** readers getting updates on machine learning, RecSys, LLMs, and engineering.
