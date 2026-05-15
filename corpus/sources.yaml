@@ -1,0 +1,244 @@
+documents:
+  # --- Papers ---
+  - filename: papers/vaswani_2017_attention_is_all_you_need.pdf
+    type: paper
+    title: "Attention Is All You Need"
+    authors:
+      - "Ashish Vaswani"
+      - "Noam Shazeer"
+      - "Niki Parmar"
+      - "Jakob Uszkoreit"
+      - "Llion Jones"
+      - "Aidan N. Gomez"
+      - "Lukasz Kaiser"
+      - "Illia Polosukhin"
+    year: 2017
+    source_url: https://arxiv.org/abs/1706.03762
+    date_retrieved: 2026-05-15
+
+  - filename: papers/lewis_2020_retrieval_augmented_generation.pdf
+    type: paper
+    title: "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+    authors:
+      - "Patrick Lewis"
+      - "Ethan Perez"
+      - "Aleksandra Piktus"
+      - "Fabio Petroni"
+      - "Vladimir Karpukhin"
+      - "Naman Goyal"
+      - "Heinrich Küttler"
+      - "Mike Lewis"
+      - "Wen-tau Yih"
+      - "Tim Rocktäschel"
+      - "Sebastian Riedel"
+      - "Douwe Kiela"
+    year: 2020
+    source_url: https://arxiv.org/abs/2005.11401
+    date_retrieved: 2026-05-15
+
+  - filename: papers/wei_2022_chain_of_thought_prompting.pdf
+    type: paper
+    title: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+    authors:
+      - "Jason Wei"
+      - "Xuezhi Wang"
+      - "Dale Schuurmans"
+      - "Maarten Bosma"
+      - "Brian Ichter"
+      - "Fei Xia"
+      - "Ed Chi"
+      - "Quoc Le"
+      - "Denny Zhou"
+    year: 2022
+    source_url: https://arxiv.org/abs/2201.11903
+    date_retrieved: 2026-05-15
+
+  - filename: papers/yao_2022_react.pdf
+    type: paper
+    title: "ReAct: Synergizing Reasoning and Acting in Language Models"
+    authors:
+      - "Shunyu Yao"
+      - "Jeffrey Zhao"
+      - "Dian Yu"
+      - "Nan Du"
+      - "Izhak Shafran"
+      - "Karthik Narasimhan"
+      - "Yuan Cao"
+    year: 2022
+    source_url: https://arxiv.org/abs/2210.03629
+    date_retrieved: 2026-05-15
+
+  - filename: papers/asai_2023_self_rag.pdf
+    type: paper
+    title: "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection"
+    authors:
+      - "Akari Asai"
+      - "Zeqiu Wu"
+      - "Yizhong Wang"
+      - "Avirup Sil"
+      - "Hannaneh Hajishirzi"
+    year: 2023
+    source_url: https://arxiv.org/abs/2310.11511
+    date_retrieved: 2026-05-15
+
+  - filename: papers/liu_2023_lost_in_the_middle.pdf
+    type: paper
+    title: "Lost in the Middle: How Language Models Use Long Contexts"
+    authors:
+      - "Nelson F. Liu"
+      - "Kevin Lin"
+      - "John Hewitt"
+      - "Ashwin Paranjape"
+      - "Michele Bevilacqua"
+      - "Fabio Petroni"
+      - "Percy Liang"
+    year: 2023
+    source_url: https://arxiv.org/abs/2307.03172
+    date_retrieved: 2026-05-15
+
+  - filename: papers/gao_2023_rag_survey.pdf
+    type: paper
+    title: "Retrieval-Augmented Generation for Large Language Models: A Survey"
+    authors:
+      - "Yunfan Gao"
+      - "Yun Xiong"
+      - "Xinyu Gao"
+      - "Kangxiang Jia"
+      - "Jinliu Pan"
+      - "Yuxi Bi"
+      - "Yi Dai"
+      - "Jiawei Sun"
+      - "Meng Wang"
+      - "Haofen Wang"
+    year: 2023
+    source_url: https://arxiv.org/abs/2312.10997
+    date_retrieved: 2026-05-15
+
+  - filename: papers/trivedi_2023_ircot.pdf
+    type: paper
+    # NOTE: arxiv.org/abs/2305.14283 is actually "Query Rewriting for Retrieval-Augmented Large Language Models"
+    # by Ma et al., not "IRCoT" by Trivedi et al. File kept with user-specified name.
+    title: "Query Rewriting for Retrieval-Augmented Large Language Models"
+    authors:
+      - "Xinbei Ma"
+      - "Yeyun Gong"
+      - "Pengcheng He"
+      - "Hai Zhao"
+      - "Nan Duan"
+    year: 2023
+    source_url: https://arxiv.org/abs/2305.14283
+    date_retrieved: 2026-05-15
+
+  - filename: papers/rafailov_2023_dpo.pdf
+    type: paper
+    title: "Direct Preference Optimization: Your Language Model is Secretly a Reward Model"
+    authors:
+      - "Rafael Rafailov"
+      - "Archit Sharma"
+      - "Eric Mitchell"
+      - "Stefano Ermon"
+      - "Christopher D. Manning"
+      - "Chelsea Finn"
+    year: 2023
+    source_url: https://arxiv.org/abs/2305.18290
+    date_retrieved: 2026-05-15
+
+  - filename: papers/yan_2024_self_discover.pdf
+    type: paper
+    # NOTE: First author is Pei Zhou, not Yan. File kept with user-specified name.
+    title: "Self-Discover: Large Language Models Self-Compose Reasoning Structures"
+    authors:
+      - "Pei Zhou"
+      - "Jay Pujara"
+      - "Xiang Ren"
+      - "Xinyun Chen"
+      - "Heng-Tze Cheng"
+      - "Quoc V. Le"
+      - "Ed H. Chi"
+      - "Denny Zhou"
+      - "Swaroop Mishra"
+    year: 2024
+    source_url: https://arxiv.org/abs/2402.03620
+    date_retrieved: 2026-05-15
+
+  # --- Blog Posts ---
+  - filename: posts/weng_2023_llm_powered_autonomous_agents.md
+    type: post
+    title: "LLM Powered Autonomous Agents"
+    authors:
+      - "Lilian Weng"
+    year: 2023
+    source_url: https://lilianweng.github.io/posts/2023-06-23-agent/
+    date_retrieved: 2026-05-15
+
+  - filename: posts/weng_2024_extrinsic_hallucinations_in_llms.md
+    type: post
+    title: "Extrinsic Hallucinations in LLMs"
+    authors:
+      - "Lilian Weng"
+    year: 2024
+    source_url: https://lilianweng.github.io/posts/2024-07-07-hallucination/
+    date_retrieved: 2026-05-15
+
+  - filename: posts/yan_2023_patterns_for_building_llm_systems.md
+    type: post
+    title: "Patterns for Building LLM-based Systems"
+    authors:
+      - "Eugene Yan"
+    year: 2023
+    source_url: https://www.eugeneyan.com/writing/llm-patterns/
+    date_retrieved: 2026-05-15
+
+  - filename: posts/yan_2024_evaluation_and_hallucination_detection.md
+    type: post
+    title: "Evaluation & Hallucination Detection"
+    authors:
+      - "Eugene Yan"
+    year: 2024
+    source_url: https://www.eugeneyan.com/writing/evals/
+    date_retrieved: 2026-05-15
+
+  - filename: posts/husain_2024_your_ai_product_needs_evals.md
+    type: post
+    title: "Your AI Product Needs Evals"
+    authors:
+      - "Hamel Husain"
+    year: 2024
+    source_url: https://hamel.dev/blog/posts/evals/
+    date_retrieved: 2026-05-15
+
+  - filename: posts/anthropic_2024_building_effective_agents.md
+    type: post
+    title: "Building Effective Agents"
+    authors:
+      - "Anthropic"
+    year: 2024
+    source_url: https://www.anthropic.com/research/building-effective-agents
+    date_retrieved: 2026-05-15
+
+  - filename: posts/anthropic_2024_contextual_retrieval.md
+    type: post
+    title: "Contextual Retrieval"
+    authors:
+      - "Anthropic"
+    year: 2024
+    source_url: https://www.anthropic.com/news/contextual-retrieval
+    date_retrieved: 2026-05-15
+
+  - filename: posts/huyen_2023_building_llm_applications_for_production.md
+    type: post
+    title: "Building LLM Applications for Production"
+    authors:
+      - "Chip Huyen"
+    year: 2023
+    source_url: https://huyenchip.com/2023/04/11/llm-engineering.html
+    date_retrieved: 2026-05-15
+
+  - filename: posts/willison_2023_catching_up_on_the_weird_world_of_llms.md
+    type: post
+    title: "Catching up on the weird world of LLMs"
+    authors:
+      - "Simon Willison"
+    year: 2023
+    source_url: https://simonwillison.net/2023/Aug/27/wordcamp-llms/
+    date_retrieved: 2026-05-15
