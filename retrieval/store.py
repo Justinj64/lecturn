@@ -41,7 +41,9 @@ class VectorStore:
         We don't need to call the embedding function ourselves.
         """
         # Each document needs a unique ID for ChromaDB to track it
-        ids = [f"doc_{i}" for i in range(len(documents))]
+        # Use current collection count as offset so IDs don't collide across calls
+        offset = self._collection.count()
+        ids = [f"doc_{offset + i}" for i in range(len(documents))]
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
 
