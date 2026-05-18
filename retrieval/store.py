@@ -11,7 +11,7 @@ Usage:
 """
 import chromadb
 from langchain_core.documents import Document
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+# from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 
 
 class VectorStore:
@@ -20,17 +20,16 @@ class VectorStore:
         # Data lives in ./chroma_db/ directory.
         self._client = chromadb.PersistentClient(path=persist_dir)
 
-        # This function converts text → 1536-dimensional vector using OpenAI's API.
-        # It reads OPENAI_API_KEY from the environment automatically.
-        self._embedding_fn = OpenAIEmbeddingFunction(
-            model_name="text-embedding-3-small",
-        )
+        # Using ChromaDB's default embedding function (all-MiniLM-L6-v2)
+        # Runs locally, no API key needed, produces 384-dim vectors.
+        # self._embedding_fn = OpenAIEmbeddingFunction(
+        #     model_name="text-embedding-3-small",
+        # )
 
         # A collection is like a "table" — all our chunks live here.
         # get_or_create means: reuse existing data if it's already stored.
         self._collection = self._client.get_or_create_collection(
             name=collection_name,
-            embedding_function=self._embedding_fn,
         )
 
     def add_documents(self, documents: list[Document]) -> None:
@@ -83,5 +82,4 @@ class VectorStore:
         self._client.delete_collection(self._collection.name)
         self._collection = self._client.get_or_create_collection(
             name=self._collection.name,
-            embedding_function=self._embedding_fn,
         )
