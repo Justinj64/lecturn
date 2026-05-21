@@ -1,0 +1,90 @@
+# Hand-crafted evaluation queries for comparing baseline vs contextual retrieval.
+# Each query has:
+#   - query: the search string
+#   - expected_sources: titles (or partial titles) that SHOULD appear in top-3
+#   - notes: why this query is interesting for comparison
+
+queries:
+  - query: "how does contextual retrieval improve chunk embedding quality"
+    expected_sources:
+      - "Contextual Retrieval"
+    notes: >
+      Direct hit on Anthropic's contextual retrieval post.
+      Contextual should win because the context prefix explicitly
+      mentions "contextual retrieval" and "embedding."
+
+  - query: "what is the difference between RAG and fine-tuning"
+    expected_sources:
+      - "Retrieval-Augmented Generation for Large Language Models: A Survey"
+      - "Patterns for Building LLM-based Systems"
+    notes: >
+      The RAG survey (Gao et al.) explicitly compares RAG vs fine-tuning.
+      Eugene Yan also discusses the tradeoff. Contextual should help
+      surface the comparison section rather than tangential mentions.
+
+  - query: "how does chain of thought prompting work"
+    expected_sources:
+      - "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+    notes: >
+      Targets the Wei et al. 2022 paper directly.
+      Both methods should find this, but contextual may rank
+      the most explanatory chunk higher.
+
+  - query: "what types of extrinsic hallucinations do LLMs produce and how can they be detected"
+    expected_sources:
+      - "Extrinsic Hallucinations in LLMs"
+      - "Evaluation & Hallucination Detection"
+    notes: >
+      Weng's hallucination post is the primary source. Yan's eval post
+      covers detection methods. Baseline chunks about hallucination
+      lose document-level context; contextual should help.
+
+  - query: "how does Self-RAG use self-reflection to improve generation"
+    expected_sources:
+      - "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection"
+    notes: >
+      Specific paper query. Baseline chunks from Self-RAG might
+      not mention "self-reflection" explicitly; contextual prefixes
+      should add that context.
+
+  - query: "what is the lost in the middle effect for long context models"
+    expected_sources:
+      - "Lost in the Middle: How Language Models Use Long Contexts"
+    notes: >
+      Liu et al. 2023 paper. The phrase "lost in the middle" should
+      be easy for both methods, but contextual should surface the
+      key finding (U-shaped attention) more reliably.
+
+  - query: "how do LLM-powered agents use planning and memory"
+    expected_sources:
+      - "LLM Powered Autonomous Agents"
+    notes: >
+      Lilian Weng's agent post covers planning and memory in depth.
+      Baseline chunks may not retain the "agent" framing;
+      contextual should keep that thread.
+
+  - query: "how to build an eval pipeline for an LLM product with examples"
+    expected_sources:
+      - "Your AI Product Needs Evals"
+      - "Evaluation & Hallucination Detection"
+    notes: >
+      Hamel Husain's post is practical and example-driven.
+      Eugene Yan's eval post covers metrics and methods.
+      Contextual should help because "eval" is generic
+      without document-level framing.
+
+  - query: "how does the attention mechanism work in transformers"
+    expected_sources:
+      - "Attention Is All You Need"
+    notes: >
+      Vaswani et al. 2017. Foundational paper. Both methods should
+      find this, but it tests whether contextual adds value on
+      well-known, heavily-referenced concepts.
+
+  - query: "workflow vs autonomous agent patterns for building with LLMs"
+    expected_sources:
+      - "Building Effective Agents"
+    notes: >
+      Anthropic's building effective agents post distinguishes
+      workflows from agents explicitly. Contextual should help
+      rank the definitional chunks higher.
