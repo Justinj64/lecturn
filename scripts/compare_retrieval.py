@@ -1,11 +1,14 @@
 """
-Compare baseline vs contextual retrieval on hand-crafted queries.
+Compare retrieval methods on hand-crafted queries.
 
-For each query in evals/queries.yaml:
-  1. Run baseline retrieval (top-K)
-  2. Run contextual retrieval (top-K)
-  3. Check if expected sources appear in top-3
-  4. Print side-by-side results and a summary scorecard
+Runs each query through all available retrieval strategies and prints
+a side-by-side comparison with hit rate, MRR, and source diversity.
+
+Methods:
+  - baseline:             raw chunk embeddings via ChromaDB
+  - contextual:           context-prefixed chunk embeddings via ChromaDB
+  - reranked_baseline:    baseline + cross-encoder reranking
+  - reranked_contextual:  contextual + cross-encoder reranking
 
 Usage:
     python scripts/compare_retrieval.py
@@ -19,6 +22,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import yaml
 from retrieval.baseline import baseline_retrieve
 from retrieval.contextual import contextual_retrieve
+from retrieval.reranker import reranked_baseline_retrieve, reranked_contextual_retrieve
+
+# Each method: (label, retrieve_function)
+METHODS = [
+    ("baseline", baseline_retrieve),
+    ("contextual", contextual_retrieve),
+    ("reranked_baseline", reranked_baseline_retrieve),
+    ("reranked_contextual", reranked_contextual_retrieve),
+]
 
 K = 5  # top-K results to retrieve
 TOP_N = 3  # check if expected source appears in top-N
@@ -81,17 +93,15 @@ def main():
         k = int(args[idx + 1])
 
     queries = load_queries()
-    print(f"Running {len(queries)} queries through baseline and contextual retrieval (top-{k})\n")
+    num_methods = len(METHODS)
+    print(f"Running {len(queries)} queries × {num_methods} methods (top-{k})\n")
     print("=" * 80)
 
-    baseline_wins = 0
-    contextual_wins = 0
-    ties = 0
-    # Track per-query scores for summary
-    all_baseline_ranks = []  # mean reciprocal rank per query
-    all_contextual_ranks = []
-    baseline_diversity_total = 0
-    contextual_diversity_total = 0
+    # Per-method accumulators
+    method_labels = [label for label, _ in METHODS]
+    wins = {label: 0 for label in method_labels}
+    all_mrrs = {label: [] for label in method_labels}
+    diversity_totals = {label: 0 for label in method_labels}
 
     for qi, q in enumerate(queries, 1):
         query = q["query"]
@@ -101,101 +111,89 @@ def main():
         print(f"  Expected sources: {', '.join(expected)}")
         print("-" * 70)
 
-        # Run both retrieval methods
-        baseline_results = baseline_retrieve(query, k=k)
-        contextual_results = contextual_retrieve(query, k=k)
+        # Run all methods, collect results
+        method_results = {}
+        method_hits = {}
+        method_mrrs_q = {}
 
-        # Check hits in top-N (with rank info)
-        baseline_hits = source_in_results(expected, baseline_results, TOP_N)
-        contextual_hits = source_in_results(expected, contextual_results, TOP_N)
+        for label, retrieve_fn in METHODS:
+            results = retrieve_fn(query, k=k)
+            method_results[label] = results
 
-        baseline_hit_count = sum(1 for _, found, _ in baseline_hits if found)
-        contextual_hit_count = sum(1 for _, found, _ in contextual_hits if found)
+            hits = source_in_results(expected, results, TOP_N)
+            method_hits[label] = hits
 
-        # Compute mean reciprocal rank (MRR) for expected sources
-        def mrr(hits):
-            rr_sum = 0
-            for _, _, rank in hits:
-                if rank is not None:
-                    rr_sum += 1.0 / rank
-            return rr_sum / len(hits) if hits else 0
+            # Compute MRR for this method on this query
+            def mrr(hits):
+                rr_sum = 0
+                for _, _, rank in hits:
+                    if rank is not None:
+                        rr_sum += 1.0 / rank
+                return rr_sum / len(hits) if hits else 0
 
-        baseline_mrr = mrr(baseline_hits)
-        contextual_mrr = mrr(contextual_hits)
-        all_baseline_ranks.append(baseline_mrr)
-        all_contextual_ranks.append(contextual_mrr)
+            m = mrr(hits)
+            method_mrrs_q[label] = m
+            all_mrrs[label].append(m)
 
-        # Source diversity
-        baseline_div = count_unique_sources(baseline_results[:k])
-        contextual_div = count_unique_sources(contextual_results[:k])
-        baseline_diversity_total += baseline_div
-        contextual_diversity_total += contextual_div
+            # Diversity
+            div = count_unique_sources(results[:k])
+            diversity_totals[label] += div
 
-        # Print baseline results
-        print(f"\n  BASELINE (top-{k}, {baseline_div} unique sources):")
-        print_results("baseline", baseline_results, k)
-        print(f"  → Hits in top-{TOP_N}: {baseline_hit_count}/{len(expected)}", end="")
-        for src, found, rank in baseline_hits:
-            rank_str = f"@{rank}" if rank else "miss"
-            print(f"  {'✓' if found else '✗'} {src} ({rank_str})", end="")
-        print(f"  MRR={baseline_mrr:.2f}")
+            # Print results for this method
+            hit_count = sum(1 for _, found, _ in hits if found)
+            print(f"\n  {label.upper()} (top-{k}, {div} unique sources):")
+            print_results(label, results, k)
+            print(f"  → Hits in top-{TOP_N}: {hit_count}/{len(expected)}", end="")
+            for src, found, rank in hits:
+                rank_str = f"@{rank}" if rank else "miss"
+                print(f"  {'✓' if found else '✗'} {src} ({rank_str})", end="")
+            print(f"  MRR={m:.2f}")
 
-        # Print contextual results
-        print(f"\n  CONTEXTUAL (top-{k}, {contextual_div} unique sources):")
-        print_results("contextual", contextual_results, k)
-        print(f"  → Hits in top-{TOP_N}: {contextual_hit_count}/{len(expected)}", end="")
-        for src, found, rank in contextual_hits:
-            rank_str = f"@{rank}" if rank else "miss"
-            print(f"  {'✓' if found else '✗'} {src} ({rank_str})", end="")
-        print(f"  MRR={contextual_mrr:.2f}")
+        # Determine winner: highest hit count, then highest MRR
+        hit_counts = {
+            label: sum(1 for _, found, _ in method_hits[label] if found)
+            for label in method_labels
+        }
+        best_hits = max(hit_counts.values())
+        best_labels = [l for l in method_labels if hit_counts[l] == best_hits]
 
-        # Determine winner: prefer higher hit count, break ties with MRR
-        if contextual_hit_count > baseline_hit_count:
-            contextual_wins += 1
-            print(f"\n  >>> CONTEXTUAL WINS (more hits)")
-        elif baseline_hit_count > contextual_hit_count:
-            baseline_wins += 1
-            print(f"\n  >>> BASELINE WINS (more hits)")
-        elif contextual_mrr > baseline_mrr + 0.01:
-            contextual_wins += 1
-            print(f"\n  >>> CONTEXTUAL WINS (better rank)")
-        elif baseline_mrr > contextual_mrr + 0.01:
-            baseline_wins += 1
-            print(f"\n  >>> BASELINE WINS (better rank)")
+        if len(best_labels) > 1:
+            # Break tie with MRR
+            best_mrr = max(method_mrrs_q[l] for l in best_labels)
+            best_labels = [l for l in best_labels if method_mrrs_q[l] >= best_mrr - 0.01]
+
+        if len(best_labels) == num_methods:
+            print(f"\n  >>> TIE (all equal)")
+        elif len(best_labels) == 1:
+            winner = best_labels[0]
+            wins[winner] += 1
+            print(f"\n  >>> {winner.upper()} WINS")
         else:
-            ties += 1
-            print(f"\n  >>> TIE")
+            # Multiple winners but not all — count as tie
+            print(f"\n  >>> TIE ({', '.join(l.upper() for l in best_labels)})")
 
         print("=" * 80)
 
     # Summary scorecard
-    avg_baseline_mrr = sum(all_baseline_ranks) / len(all_baseline_ranks)
-    avg_contextual_mrr = sum(all_contextual_ranks) / len(all_contextual_ranks)
-    avg_baseline_div = baseline_diversity_total / len(queries)
-    avg_contextual_div = contextual_diversity_total / len(queries)
-
     print(f"\n{'=' * 80}")
     print(f"SCORECARD ({len(queries)} queries, checking top-{TOP_N} for expected sources)")
     print(f"{'=' * 80}")
-    print(f"  Contextual wins:  {contextual_wins}")
-    print(f"  Baseline wins:    {baseline_wins}")
-    print(f"  Ties:             {ties}")
-    print()
-    print(f"  Mean Reciprocal Rank (higher = expected source ranked earlier):")
-    print(f"    Baseline MRR:    {avg_baseline_mrr:.3f}")
-    print(f"    Contextual MRR:  {avg_contextual_mrr:.3f}")
-    print()
-    print(f"  Source diversity (avg unique sources in top-{k}):")
-    print(f"    Baseline:        {avg_baseline_div:.1f}")
-    print(f"    Contextual:      {avg_contextual_div:.1f}")
-    print()
 
-    if contextual_wins > baseline_wins:
-        print(f"  → Contextual retrieval wins on {contextual_wins}/{len(queries)} queries.")
-    elif baseline_wins > contextual_wins:
-        print(f"  → Baseline retrieval wins on {baseline_wins}/{len(queries)} queries.")
-    else:
-        print(f"  → Both methods perform equally on hit count.")
+    print(f"\n  Wins:")
+    for label in method_labels:
+        print(f"    {label:25s} {wins[label]}")
+
+    print(f"\n  Mean Reciprocal Rank (higher = expected source ranked earlier):")
+    for label in method_labels:
+        avg = sum(all_mrrs[label]) / len(all_mrrs[label])
+        print(f"    {label:25s} {avg:.3f}")
+
+    print(f"\n  Source diversity (avg unique sources in top-{k}):")
+    for label in method_labels:
+        avg = diversity_totals[label] / len(queries)
+        print(f"    {label:25s} {avg:.1f}")
+
+    print()
 
 
 if __name__ == "__main__":
