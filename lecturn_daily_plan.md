@@ -82,7 +82,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 6 — Polish + (optional) reranking
+### ~~Day 6 — Polish + (optional) reranking~~
 
 **Build:**
 - Clean up `lectern/retrieval/` — add docstrings, README in the folder explaining the two strategies
@@ -95,7 +95,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 7 — Writeup: `lectern_retrieval_architecture.md`
+### ~~Day 7 — Writeup: `lectern_retrieval_architecture.md`~~
 
 **Build:**
 - Document in `interview_artifacts/01_retrieval_architecture.md`:
