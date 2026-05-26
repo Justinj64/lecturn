@@ -70,7 +70,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 5 — Comparison + hand-written queries
+### ~~Day 5 — Comparison + hand-written queries~~
 
 **Build:**
 - Write 5-10 hand-crafted queries that you know the right answer to (because you've read the corpus). Examples: "what's the difference between RAG and fine-tuning per Eugene Yan", "how does contextual retrieval work per Anthropic"
@@ -115,7 +115,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 **Goal by end of week:** working eval harness on a golden dataset of 15-20 examples, scoring faithfulness + completeness + format validity. This is the *senior signal* layer of Lectern.
 
-### Day 8 — Evals module scaffolding
+### ~~Day 8 — Evals module scaffolding~~
 
 **Build:**
 - `lectern/evals/` module structure: `golden.py`, `deterministic.py`, `judge.py`, `golden_dataset.yaml`
@@ -125,7 +125,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 9 — Failure modes inventory
+### ~~Day 9 — Failure modes inventory~~
 
 **Build:**
 - Brainstorm 10 ways Lectern can fail. Examples: hallucinated citations, citations pointing to wrong passage, missed key source, format breaks (invalid JSON), confidence not calibrated, repeats same source, missing required sections, contradicts itself between sections, fabricated quote, wrong attribution between similar papers

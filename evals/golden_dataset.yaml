@@ -1,0 +1,10 @@
+# Placeholder — populated on Day 11 with 15-20 golden examples.
+# See golden.py for the loader.
+#
+# Each entry:
+#   question: the query to send to Lecturn
+#   mode: comparison | lit-review | notes
+#   expected_sources: list of source titles that should be cited
+#   expected_key_claims: list of claims the output should contain
+
+examples: []
