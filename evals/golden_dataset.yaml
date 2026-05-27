@@ -1,10 +1,211 @@
-# Placeholder — populated on Day 11 with 15-20 golden examples.
+# Golden evaluation dataset — 17 examples grounded in the actual corpus.
 # See golden.py for the loader.
 #
 # Each entry:
-#   question: the query to send to Lecturn
-#   mode: comparison | lit-review | notes
-#   expected_sources: list of source titles that should be cited
-#   expected_key_claims: list of claims the output should contain
+#   question:             the query to send to Lecturn
+#   mode:                 comparison | lit-review | notes
+#   expected_sources:     source titles (must match sources.yaml title field)
+#   expected_key_claims:  claims the output should contain (used by judge_completeness)
 
-examples: []
+examples:
+
+  # -------------------------------------------------------------------------
+  # COMPARISON MODE (6) — questions that ask Lecturn to compare two things,
+  # requiring it to draw from multiple sources and identify trade-offs.
+  # -------------------------------------------------------------------------
+
+  - question: "What are the trade-offs between RAG and fine-tuning for knowledge-intensive tasks?"
+    mode: comparison
+    expected_sources:
+      - "Retrieval-Augmented Generation for Large Language Models: A Survey"
+      - "Patterns for Building LLM-based Systems"
+    expected_key_claims:
+      - "RAG provides access to up-to-date knowledge without retraining"
+      - "fine-tuning encodes knowledge into model parameters at training time"
+      - "RAG incurs retrieval latency at inference time"
+      - "fine-tuning is better suited when the task requires a specific style or format rather than factual recall"
+
+  - question: "How does Self-RAG differ from standard RAG in deciding when to retrieve?"
+    mode: comparison
+    expected_sources:
+      - "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+      - "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection"
+    expected_key_claims:
+      - "standard RAG always retrieves for every query"
+      - "Self-RAG uses special reflection tokens to decide whether retrieval is needed"
+      - "Self-RAG critiques its own output for relevance and support after generation"
+      - "Self-RAG outperforms ChatGPT on factual accuracy benchmarks despite being smaller"
+
+  - question: "Compare chain-of-thought prompting and ReAct as strategies for improving LLM reasoning."
+    mode: comparison
+    expected_sources:
+      - "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+      - "ReAct: Synergizing Reasoning and Acting in Language Models"
+    expected_key_claims:
+      - "chain-of-thought prompting produces intermediate reasoning steps before a final answer"
+      - "ReAct interleaves reasoning traces with external actions such as search"
+      - "chain-of-thought relies solely on the model's parametric knowledge"
+      - "ReAct grounds reasoning in external observations which reduces hallucination"
+
+  - question: "What are the differences between LLM-as-judge evaluation and deterministic assertion-based evaluation?"
+    mode: comparison
+    expected_sources:
+      - "Evaluation & Hallucination Detection"
+      - "Your AI Product Needs Evals"
+    expected_key_claims:
+      - "deterministic checks are cheap, fast, and catch structural failures"
+      - "LLM-as-judge can evaluate semantic quality but is itself prone to bias"
+      - "LLM judges can miss hallucinations or penalise correct but unusually phrased answers"
+      - "a robust eval suite combines deterministic checks with model-based scoring"
+
+  - question: "How does Anthropic's contextual retrieval compare to standard dense retrieval?"
+    mode: comparison
+    expected_sources:
+      - "Contextual Retrieval"
+      - "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+    expected_key_claims:
+      - "standard dense retrieval embeds raw chunks without document-level context"
+      - "contextual retrieval prepends a short context summary to each chunk before embedding"
+      - "contextual retrieval reduces retrieval failure rate by approximately 49 percent"
+      - "combining contextual retrieval with BM25 reranking reduces failure rate by 67 percent"
+
+  - question: "What is the difference between agentic workflows and fully autonomous agents for production use?"
+    mode: comparison
+    expected_sources:
+      - "Building Effective Agents"
+      - "LLM Powered Autonomous Agents"
+    expected_key_claims:
+      - "workflows follow predefined control flow with LLMs filling specific steps"
+      - "autonomous agents determine their own control flow dynamically"
+      - "Anthropic recommends starting with the simplest solution and only adding agency when needed"
+      - "agents require planning and memory capabilities to handle multi-step tasks"
+
+  # -------------------------------------------------------------------------
+  # LIT-REVIEW MODE (5) — questions asking for a survey across multiple
+  # sources on a topic. Tests source breadth and synthesis.
+  # -------------------------------------------------------------------------
+
+  - question: "What causes hallucinations in LLMs and what mitigation strategies exist?"
+    mode: lit-review
+    expected_sources:
+      - "Extrinsic Hallucinations in LLMs"
+      - "Evaluation & Hallucination Detection"
+      - "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+    expected_key_claims:
+      - "hallucinations arise when the model generates text not grounded in retrieved or factual context"
+      - "retrieval augmentation reduces hallucination by grounding generation in external documents"
+      - "extrinsic hallucinations contradict or are unverifiable against source documents"
+      - "faithfulness evaluation checks whether claims are supported by retrieved chunks"
+
+  - question: "What are the key components and capabilities that make up an LLM-powered agent?"
+    mode: lit-review
+    expected_sources:
+      - "LLM Powered Autonomous Agents"
+      - "Building Effective Agents"
+      - "ReAct: Synergizing Reasoning and Acting in Language Models"
+    expected_key_claims:
+      - "agents consist of planning, memory, and tool use components"
+      - "memory includes short-term context and long-term external storage"
+      - "tool use allows agents to interact with external APIs, search, and code interpreters"
+      - "ReAct demonstrates how reasoning traces and actions can be interleaved"
+
+  - question: "What retrieval strategies have been proposed beyond naive fixed-size chunking?"
+    mode: lit-review
+    expected_sources:
+      - "Contextual Retrieval"
+      - "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection"
+      - "Retrieval-Augmented Generation for Large Language Models: A Survey"
+    expected_key_claims:
+      - "contextual retrieval adds document-level context prefixes to individual chunks"
+      - "Self-RAG retrieves adaptively based on whether the generation requires external knowledge"
+      - "hybrid retrieval combines dense vector search with sparse BM25 for complementary recall"
+      - "the RAG survey categorises retrieval approaches into naive, advanced, and modular RAG"
+
+  - question: "How should LLM-based applications be evaluated in production?"
+    mode: lit-review
+    expected_sources:
+      - "Your AI Product Needs Evals"
+      - "Evaluation & Hallucination Detection"
+      - "Building LLM Applications for Production"
+    expected_key_claims:
+      - "evaluation should start with error analysis on real failure cases, not benchmark scores"
+      - "LLM-as-judge can score semantic quality but requires calibration against human judgements"
+      - "production evals must cover both correctness and safety or format constraints"
+      - "hallucination detection requires checking claims against source documents"
+
+  - question: "How has prompting evolved as a technique for improving LLM reasoning and task performance?"
+    mode: lit-review
+    expected_sources:
+      - "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+      - "ReAct: Synergizing Reasoning and Acting in Language Models"
+      - "Self-Discover: Large Language Models Self-Compose Reasoning Structures"
+    expected_key_claims:
+      - "chain-of-thought prompting elicits step-by-step reasoning through few-shot examples"
+      - "ReAct extends prompting to interleave reasoning with grounded actions"
+      - "Self-Discover allows models to compose task-specific reasoning structures from atomic modules"
+      - "emergent reasoning abilities appear to require sufficiently large models"
+
+  # -------------------------------------------------------------------------
+  # NOTES MODE (6) — questions about a specific paper or post.
+  # Tests whether the right source is retrieved and key content is surfaced.
+  # -------------------------------------------------------------------------
+
+  - question: "How does contextual retrieval work and what were the main results?"
+    mode: notes
+    expected_sources:
+      - "Contextual Retrieval"
+    expected_key_claims:
+      - "a short context is prepended to each chunk by prompting Claude to situate the chunk within the document"
+      - "the context-enriched chunk is then embedded and stored in the vector index"
+      - "contextual retrieval combined with BM25 reduced retrieval failure by 67 percent"
+      - "the approach is compatible with any embedding model"
+
+  - question: "What is the 'lost in the middle' problem and why does it matter for RAG?"
+    mode: notes
+    expected_sources:
+      - "Lost in the Middle: How Language Models Use Long Contexts"
+    expected_key_claims:
+      - "language models perform best when relevant information is at the beginning or end of the context"
+      - "performance degrades when relevant information is in the middle of a long context window"
+      - "the effect worsens as the number of retrieved documents increases"
+      - "this has direct implications for how retrieved chunks should be ordered in RAG prompts"
+
+  - question: "How does the transformer attention mechanism work?"
+    mode: notes
+    expected_sources:
+      - "Attention Is All You Need"
+    expected_key_claims:
+      - "attention computes a weighted sum of value vectors where weights come from query-key dot products"
+      - "multi-head attention runs multiple attention functions in parallel and concatenates the results"
+      - "positional encoding is added to token embeddings to inject sequence order information"
+      - "the transformer uses an encoder-decoder architecture connected by cross-attention"
+
+  - question: "What are the main patterns Eugene Yan identifies for building reliable LLM systems?"
+    mode: notes
+    expected_sources:
+      - "Patterns for Building LLM-based Systems"
+    expected_key_claims:
+      - "evals are the foundation for knowing whether any change to the system is an improvement"
+      - "RAG is preferred over fine-tuning when knowledge needs to be current or traceable"
+      - "guardrails and defensive UX should be designed to handle model failures gracefully"
+      - "caching frequent queries reduces cost and latency in production"
+
+  - question: "How does Self-RAG use reflection tokens to control retrieval and generation?"
+    mode: notes
+    expected_sources:
+      - "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection"
+    expected_key_claims:
+      - "Self-RAG introduces special tokens: Retrieve, ISREL, ISSUP, and ISUSE"
+      - "the model uses the Retrieve token to decide whether to invoke retrieval at all"
+      - "ISSUP checks whether the generated segment is supported by the retrieved passage"
+      - "this allows the model to skip retrieval for queries that do not require external knowledge"
+
+  - question: "What practical advice does Chip Huyen give for taking LLM applications to production?"
+    mode: notes
+    expected_sources:
+      - "Building LLM Applications for Production"
+    expected_key_claims:
+      - "the main challenges are hallucination, long context handling, and cost and latency"
+      - "task composability helps break complex tasks into steps the model handles reliably"
+      - "prompt engineering is the first lever to pull before fine-tuning"
+      - "evaluation is necessary but hard because outputs are open-ended and hard to score automatically"

@@ -136,7 +136,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 10 — Deterministic checks
+### ~~Day 10 — Deterministic checks~~
 
 **Build:**
 - `lectern/evals/deterministic.py` implements:
@@ -150,7 +150,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 11 — Golden dataset
+### ~~Day 11 — Golden dataset~~
 
 **Build:**
 - Write 15-20 entries in `golden_dataset.yaml`. Each entry: `{question, expected_sources, expected_key_claims, mode}` where mode is one of comparison/lit-review/notes
@@ -161,7 +161,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 12 — LLM-as-judge for faithfulness
+### ~~Day 12 — LLM-as-judge for faithfulness~~
 
 **Build:**
 - `lectern/evals/judge.py` implements:
@@ -174,7 +174,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 13 — Run evals end-to-end
+### ~~Day 13 — Run evals end-to-end~~
 
 **Build:**
 - `scripts/run_evals.py`: runs every golden example through the current Lectern pipeline (retrieval + a basic generation step), produces a scorecard
@@ -185,7 +185,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 14 — Writeup: `lectern_eval_strategy.md`
+### ~~Day 14 — Writeup: `lectern_eval_strategy.md`~~
 
 **Build:**
 - Document in `interview_artifacts/02_eval_strategy.md`:

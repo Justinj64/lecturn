@@ -1,0 +1,704 @@
+[
+  {
+    "question": "What are the trade-offs between RAG and fine-tuning for knowledge-intensive tasks?",
+    "mode": "comparison",
+    "output": "```json\n{\n  \"query\": \"What are the trade-offs between RAG and fine-tuning for knowledge-intensive tasks?\",\n  \"mode\": \"comparison\",\n  \"similarities\": \"RAG and fine-tuning (FT) are both methods for optimizing large language models (LLMs) and can be used in conjunction with each other to enhance a model's capabilities. Both methods can be applied to improve LLM performance on downstream tasks, and their combined use may lead to optimal results [source: Retrieval-Augmented Generation for Large Language Models: A Survey].\",\n  \"differences\": \"Fine-tuning involves further training the model, whereas RAG, particularly in its early stages (Naive RAG), requires low model modifications and focuses on external knowledge [source: Retrieval-Augmented Generation for Large Language Models: A Survey]. The choice between RAG and FT depends on specific application needs regarding data dynamics, customization, and computational resources [source: Retrieval-Augmented Generation for Large Language Models: A Survey]. Fine-tuning can be used to learn new factual information through unsupervised training, while RAG augments LLMs with external knowledge [source: Retrieval-Augmented Generation for Large Language Models: A Survey].\",\n  \"sources\": [\n    \"Retrieval-Augmented Generation for Large Language Models: A Survey\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          ".\",\n  \"sources\": [\n    \"Retrieval-Augmented Generation for Large Language Models..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 3,
+      "reasoning": "The output mentions that RAG augments LLMs with external knowledge and that fine-tuning involves further training, implying knowledge encoding. However, it does not explicitly state that RAG provides up-to-date knowledge without retraining, that fine-tuning encodes knowledge into parameters at training time, or that RAG incurs retrieval latency. It also doesn't address the suitability of fine-tuning for style/format versus factual recall.",
+      "missing_claims": [
+        "RAG provides access to up-to-date knowledge without retraining",
+        "fine-tuning encodes knowledge into model parameters at training time",
+        "RAG incurs retrieval latency at inference time",
+        "fine-tuning is better suited when the task requires a specific style or format rather than factual recall"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "How does Self-RAG differ from standard RAG in deciding when to retrieve?",
+    "mode": "comparison",
+    "output": "```json\n{\n  \"query\": \"How does Self-RAG differ from standard RAG in deciding when to retrieve?\",\n  \"mode\": \"comparison\",\n  \"similarities\": \"Both Self-RAG and standard RAG (including Naive RAG, Advanced RAG, and Modular RAG) aim to augment language model generation with retrieved information. The general process involves retrieval and generation steps.\",\n  \"differences\": \"Self-RAG differs from standard RAG by dynamically deciding when to retrieve information. It first determines if retrieved passages would be helpful for the continued generation based on the input prompt and preceding generations. If deemed helpful, it then outputs a retrieval token to call a retriever model on demand. Standard RAG, particularly Naive RAG, follows a more fixed chain-like structure where retrieval is a more integrated part of the process without this explicit on-demand decision-making step for each generation segment.\",\n  \"sources\": [\n    \"Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection\",\n    \"Retrieval-Augmented Generation for Large Language Models: A Survey\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "```json\n{\n  \"query\": \"How does Self-RAG differ from standard RAG in deciding whe..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 2,
+      "reasoning": "The output correctly identifies that Self-RAG dynamically decides when to retrieve, contrasting it with standard RAG's more fixed approach. However, it fails to mention Self-RAG's critique mechanism or its performance benchmarks.",
+      "missing_claims": [
+        "standard RAG always retrieves for every query",
+        "Self-RAG critiques its own output for relevance and support after generation",
+        "Self-RAG outperforms ChatGPT on factual accuracy benchmarks despite being smaller"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "Compare chain-of-thought prompting and ReAct as strategies for improving LLM reasoning.",
+    "mode": "comparison",
+    "output": "{\n  \"query\": \"Compare chain-of-thought prompting and ReAct as strategies for improving LLM reasoning.\",\n  \"mode\": \"comparison\",\n  \"similarities\": \"Both Chain-of-Thought (CoT) prompting and ReAct are strategies aimed at enhancing the reasoning capabilities of Large Language Models (LLMs) for problem-solving [source: ReAct: Synergizing Reasoning and Acting in Language Models, Self-Discover: Large Language Models Self-Compose Reasoning Structures]. CoT prompting is recognized for its ability to elicit an LLM's internal \\\"thinking procedure\\\" [source: ReAct: Synergizing Reasoning and Acting in Language Models].\",\n  \"differences\": \"ReAct distinguishes itself by integrating both reasoning and acting within the LLM's process [source: LLM Powered Autonomous Agents]. It extends the LLM's action space to include task-specific discrete actions, allowing interaction with external environments (e.g., using a Wikipedia search API), in addition to generating reasoning traces in natural language [source: LLM Powered Autonomous Agents]. The ReAct prompt template explicitly includes steps for the LLM to 'Think', 'Action', and 'Observation', which are repeated [source: LLM Powered Autonomous Agents]. This is in contrast to CoT prompting, which primarily focuses on formulating a \\\"thinking procedure\\\" for problem-solving [source: ReAct: Synergizing Reasoning and Acting in Language Models]. Experiments have shown that ReAct outperforms a baseline that removes the 'Thought' step ('Act'-only) [source: LLM Powered Autonomous Agents].\",\n  \"sources\": [\n    \"ReAct: Synergizing Reasoning and Acting in Language Models\",\n    \"LLM Powered Autonomous Agents\",\n    \"Chain-of-Thought Prompting Elicits Reasoning in Large Language Models\",\n    \"Self-Discover: Large Language Models Self-Compose Reasoning Structures\"\n  ]\n}",
+    "deterministic": {
+      "json_valid": true,
+      "required_fields": {
+        "passed": true,
+        "missing": []
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "Compare chain-of-thought prompting and ReAct as strategies for improving LLM rea...",
+          "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+          "Self-Discover: Large Language Models Self-Compose Reasoning Structures"
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "LLM Powered Autonomous Agents"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 3,
+      "reasoning": "The output explains that CoT elicits a thinking procedure and ReAct integrates reasoning with acting and external environments. However, it does not explicitly state that CoT relies solely on parametric knowledge or that ReAct grounds reasoning in external observations to reduce hallucination.",
+      "missing_claims": [
+        "chain-of-thought relies solely on the model's parametric knowledge",
+        "ReAct grounds reasoning in external observations which reduces hallucination"
+      ]
+    },
+    "faithfulness_scores": [
+      3,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      2
+    ],
+    "avg_faithfulness": 4.545454545454546,
+    "n_claims": 11
+  },
+  {
+    "question": "What are the differences between LLM-as-judge evaluation and deterministic assertion-based evaluation?",
+    "mode": "comparison",
+    "output": "{\n  \"query\": \"What are the differences between LLM-as-judge evaluation and deterministic assertion-based evaluation?\",\n  \"mode\": \"comparison\",\n  \"similarities\": \"Both LLM-as-judge evaluation and deterministic assertion-based evaluation are methods used to assess the performance of AI models. LLMs can also be used to generate test cases and write assertions for evaluation systems.\",\n  \"differences\": \"LLM-as-judge evaluation utilizes a strong LLM as a reference-free metric to evaluate generations from other LLMs, potentially eliminating the need for human judgments or gold references [source: Patterns for Building LLM-based Systems]. In contrast, deterministic assertion-based evaluation involves running specific queries against a system and verifying that the expected number of results is returned, as illustrated by an example where user inputs trigger assertions to check the output [source: Your AI Product Needs Evals]. While LLM-as-judge evaluation is an emerging trend for reference-free metrics, assertion-based evaluation is a more established method for verifying specific outcomes.\",\n  \"sources\": [\n    \"Patterns for Building LLM-based Systems\",\n    \"Your AI Product Needs Evals\"\n  ]\n}",
+    "deterministic": {
+      "json_valid": true,
+      "required_fields": {
+        "passed": true,
+        "missing": []
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "What are the differences between LLM-as-judge evaluation and deterministic asser...",
+          "Both LLM-as-judge evaluation and deterministic assertion-based evaluation are me...",
+          ". While LLM-as-judge evaluation is an emerging trend for reference-free metrics,..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": true,
+        "duplicated": []
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 2,
+      "reasoning": "The output describes both evaluation methods and their differences but fails to mention the cost, speed, bias, or the need for a combined approach.",
+      "missing_claims": [
+        "deterministic checks are cheap, fast, and catch structural failures",
+        "LLM-as-judge can evaluate semantic quality but is itself prone to bias",
+        "LLM judges can miss hallucinations or penalise correct but unusually phrased answers",
+        "a robust eval suite combines deterministic checks with model-based scoring"
+      ]
+    },
+    "faithfulness_scores": [
+      2,
+      3,
+      5,
+      5,
+      5,
+      3
+    ],
+    "avg_faithfulness": 3.8333333333333335,
+    "n_claims": 6
+  },
+  {
+    "question": "How does Anthropic's contextual retrieval compare to standard dense retrieval?",
+    "mode": "comparison",
+    "output": "{\n  \"query\": \"How does Anthropic's contextual retrieval compare to standard dense retrieval?\",\n  \"mode\": \"comparison\",\n  \"similarities\": \"Both contextual retrieval and standard dense retrieval are methods used in natural language processing tasks, particularly in conjunction with large language models. Both aim to retrieve relevant information to improve performance on downstream tasks. The effectiveness of the retrieval mechanism is a key feature in both approaches, and improvements in retrieval can lead to better results [source: Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks].\",\n  \"differences\": \"Anthropic's contextual retrieval is a specific strategy that has been experimented with across various knowledge domains, embedding models, and retrieval strategies [source: Contextual Retrieval]. While standard dense retrieval is a general concept, Anthropic's approach focuses on 'contextual retrieval' as introduced in their work. The passages do not provide a direct comparison of Anthropic's contextual retrieval against a specific 'standard dense retrieval' method in terms of their mechanisms or performance metrics, but they do mention that learned retrieval improves results for all tasks [source: Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks].\",\n  \"sources\": [\n    \"Contextual Retrieval\",\n    \"Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks\"\n  ]\n}",
+    "deterministic": {
+      "json_valid": true,
+      "required_fields": {
+        "passed": true,
+        "missing": []
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "How does Anthropic's contextual retrieval compare to standard dense retrieval?",
+          "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+        ]
+      },
+      "no_duplicates": {
+        "passed": true,
+        "duplicated": []
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 1,
+      "reasoning": "The output only vaguely touches on the general concepts of retrieval and mentions that learned retrieval improves results, but it does not address any of the specific claims about the mechanisms or performance metrics of contextual retrieval compared to standard dense retrieval.",
+      "missing_claims": [
+        "standard dense retrieval embeds raw chunks without document-level context",
+        "contextual retrieval prepends a short context summary to each chunk before embedding",
+        "contextual retrieval reduces retrieval failure rate by approximately 49 percent",
+        "combining contextual retrieval with BM25 reranking reduces failure rate by 67 percent"
+      ]
+    },
+    "faithfulness_scores": [
+      1,
+      2,
+      4,
+      5,
+      5,
+      3,
+      3,
+      2
+    ],
+    "avg_faithfulness": 3.125,
+    "n_claims": 8
+  },
+  {
+    "question": "What is the difference between agentic workflows and fully autonomous agents for production use?",
+    "mode": "comparison",
+    "output": "{\n  \"query\": \"What is the difference between agentic workflows and fully autonomous agents for production use?\",\n  \"mode\": \"comparison\",\n  \"similarities\": \"Both agentic workflows and fully autonomous agents are types of agentic systems that utilize LLMs and tools to accomplish tasks. They represent increasing levels of complexity in agentic systems, moving from simpler compositional workflows to more autonomous agents.\",\n  \"differences\": \"Agentic workflows orchestrate LLMs and tools through predefined code paths, offering predictability and consistency for well-defined tasks. In contrast, fully autonomous agents allow LLMs to dynamically direct their own processes and tool usage, maintaining control over task accomplishment. Agents are better suited for open-ended problems where the number of steps is unpredictable and where flexibility and model-driven decision-making are needed at scale, requiring a level of trust in the LLM's decision-making.\",\n  \"sources\": [\n    \"Building Effective Agents\",\n    \"Building Effective Agents\",\n    \"Building Effective Agents\",\n    \"Building Effective Agents\",\n    \"Building Effective Agents\"\n  ]\n}",
+    "deterministic": {
+      "json_valid": true,
+      "required_fields": {
+        "passed": true,
+        "missing": []
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "What is the difference between agentic workflows and fully autonomous agents for...",
+          "Both agentic workflows and fully autonomous agents are types of agentic systems ...",
+          "Agentic workflows orchestrate LLMs and tools through predefined code paths, offe..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": true,
+        "duplicated": []
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 3,
+      "reasoning": "The output correctly identifies the core difference in control flow between agentic workflows and autonomous agents, but it omits the recommendation to start simple and the specific capabilities required for agents.",
+      "missing_claims": [
+        "Anthropic recommends starting with the simplest solution and only adding agency when needed",
+        "agents require planning and memory capabilities to handle multi-step tasks"
+      ]
+    },
+    "faithfulness_scores": [
+      5,
+      4,
+      5,
+      5,
+      5,
+      5
+    ],
+    "avg_faithfulness": 4.833333333333333,
+    "n_claims": 6
+  },
+  {
+    "question": "What causes hallucinations in LLMs and what mitigation strategies exist?",
+    "mode": "lit-review",
+    "output": "```json\n{\n  \"query\": \"What causes hallucinations in LLMs and what mitigation strategies exist?\",\n  \"mode\": \"lit-review\",\n  \"summary\": \"Hallucinations in Large Language Models (LLMs) can stem from issues during the pre-training data stage [source: Extrinsic Hallucinations in LLMs]. To combat these hallucinations, LLMs need to be factual and also capable of admitting when they don't know an answer [source: Extrinsic Hallucinations in LLMs].\\n\\nSeveral mitigation strategies exist to improve the factuality of LLMs. These include retrieving external knowledge bases, employing special sampling methods, and fine-tuning for alignment [source: Extrinsic Hallucinations in LLMs]. Retrieval-Augmented Generation (RAG) is one such approach that involves edits and attribution [source: Extrinsic Hallucinations in LLMs].\",\n  \"sources\": [\n    \"Extrinsic Hallucinations in LLMs\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          ".\",\n  \"sources\": [\n    \"Extrinsic Hallucinations in LLMs\"\n  ]\n}\n```"
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 3,
+      "reasoning": "The output mentions that hallucinations can stem from pre-training data issues and that retrieval augmentation is a mitigation strategy. However, it does not explicitly define hallucinations as text not grounded in context or discuss faithfulness evaluation.",
+      "missing_claims": [
+        "hallucinations arise when the model generates text not grounded in retrieved or factual context",
+        "faithfulness evaluation checks whether claims are supported by retrieved chunks"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "What are the key components and capabilities that make up an LLM-powered agent?",
+    "mode": "lit-review",
+    "output": "{\n  \"query\": \"What are the key components and capabilities that make up an LLM-powered agent?\",\n  \"mode\": \"lit-review\",\n  \"summary\": \"An LLM-powered autonomous agent system utilizes a Large Language Model (LLM) as its central \"brain.\" This LLM is augmented with several key components, including retrieval, tools, and memory, which enhance its capabilities. These augmented LLMs can actively generate search queries, select appropriate tools for tasks, and decide what information to retain. The development of effective agents emphasizes starting with simple prompts and optimizing them, only incorporating multi-step agentic systems when simpler solutions are insufficient.\",\n  \"sources\": [\n    \"LLM Powered Autonomous Agents\",\n    \"Building Effective Agents\"\n  ]\n}",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "{\n  \"query\": \"What are the key components and capabilities that make up an LLM-p..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 3,
+      "reasoning": "The output mentions retrieval, tools, and memory as components, but doesn't elaborate on the specifics of memory (short-term vs. long-term) or the different types of tool use. It also omits the ReAct framework.",
+      "missing_claims": [
+        "memory includes short-term context and long-term external storage",
+        "tool use allows agents to interact with external APIs, search, and code interpreters",
+        "ReAct demonstrates how reasoning traces and actions can be interleaved"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "What retrieval strategies have been proposed beyond naive fixed-size chunking?",
+    "mode": "lit-review",
+    "output": "{\n  \"query\": \"What retrieval strategies have been proposed beyond naive fixed-size chunking?\",\n  \"mode\": \"lit-review\",\n  \"summary\": \"Beyond naive fixed-size chunking, several strategies have been proposed to improve retrieval performance. The choice of chunk size, chunk boundary, and chunk overlap can significantly impact retrieval outcomes [source: Contextual Retrieval].\\n\\nMore advanced chunking strategies are employed in various retrieval-augmented generation (RAG) systems. For instance, Self-RAG, BGM, CoQ, Token-Elimination, PaperQA, NoiseRAG, and IAG all utilize text chunking, but differ in their tuning or inference strategies [source: Retrieval-Augmented Generation for Large Language Models: A Survey]. Some methods involve adaptive chunk tuning, while others use iterative inference or a one-time inference approach [source: Retrieval-Augmented Generation for Large Language Models: A Survey].\",\n  \"sources\": [\n    \"Contextual Retrieval\",\n    \"Retrieval-Augmented Generation for Large Language Models: A Survey\"\n  ]\n}",
+    "deterministic": {
+      "json_valid": true,
+      "required_fields": {
+        "passed": true,
+        "missing": []
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "What retrieval strategies have been proposed beyond naive fixed-size chunking?",
+          "Retrieval-Augmented Generation for Large Language Models: A Survey"
+        ]
+      },
+      "no_duplicates": {
+        "passed": true,
+        "duplicated": []
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 2,
+      "reasoning": "The output mentions several advanced chunking strategies and RAG systems but fails to detail the specific mechanisms of contextual retrieval, Self-RAG's adaptive retrieval, or the categorization of retrieval approaches from the survey.",
+      "missing_claims": [
+        "contextual retrieval adds document-level context prefixes to individual chunks",
+        "Self-RAG retrieves adaptively based on whether the generation requires external knowledge",
+        "hybrid retrieval combines dense vector search with sparse BM25 for complementary recall",
+        "the RAG survey categorises retrieval approaches into naive, advanced, and modular RAG"
+      ]
+    },
+    "faithfulness_scores": [
+      3,
+      3,
+      5,
+      4,
+      5,
+      5,
+      0
+    ],
+    "avg_faithfulness": 3.5714285714285716,
+    "n_claims": 7
+  },
+  {
+    "question": "How should LLM-based applications be evaluated in production?",
+    "mode": "lit-review",
+    "output": "{\n  \"query\": \"How should LLM-based applications be evaluated in production?\",\n  \"mode\": \"lit-review\",\n  \"summary\": \"Evaluating LLM-based applications in production requires defining specific evaluation metrics. While the field is rapidly evolving, with APIs, applications, infrastructure, and terminology changing frequently, cost and latency analysis should be performed on a weekly basis. The process of building production-ready LLM applications is challenging, partly due to the inherent ambiguities of natural language in prompt engineering and the early stage of the field.\",\n  \"sources\": [\n    \"Building LLM Applications for Production\",\n    \"Patterns for Building LLM-based Systems\"\n  ]\n}",
+    "deterministic": {
+      "json_valid": true,
+      "required_fields": {
+        "passed": true,
+        "missing": []
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "How should LLM-based applications be evaluated in production?",
+          "Evaluating LLM-based applications in production requires defining specific evalu..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": true,
+        "duplicated": []
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 1,
+      "reasoning": "The output mentions the need for specific evaluation metrics and weekly cost/latency analysis but does not address any of the specific evaluation methodologies or concerns outlined in the expected claims.",
+      "missing_claims": [
+        "evaluation should start with error analysis on real failure cases, not benchmark scores",
+        "LLM-as-judge can score semantic quality but requires calibration against human judgements",
+        "production evals must cover both correctness and safety or format constraints",
+        "hallucination detection requires checking claims against source documents"
+      ]
+    },
+    "faithfulness_scores": [
+      2,
+      5,
+      5,
+      5
+    ],
+    "avg_faithfulness": 4.25,
+    "n_claims": 4
+  },
+  {
+    "question": "How has prompting evolved as a technique for improving LLM reasoning and task performance?",
+    "mode": "lit-review",
+    "output": "```json\n{\n  \"query\": \"How has prompting evolved as a technique for improving LLM reasoning and task performance?\",\n  \"mode\": \"lit-review\",\n  \"summary\": \"Prompting has evolved significantly as a technique to enhance Large Language Model (LLM) reasoning and task performance. Various prompting methods have been proposed, drawing inspiration from human cognitive theories, with the goal of improving LLMs' ability to reason and solve complex problems [source: Self-Discover: Large Language Models Self-Compose Reasoning Structures].\\n\\nOne key development is Chain-of-Thought (CoT) prompting, which encourages models to generate a reasoning process leading to the final answer, rather than just the answer itself [source: Self-Discover: Large Language Models Self-Compose Reasoning Structures]. This approach has been shown to perform comparably to manually written exemplars and substantially outperforms standard prompting [source: Chain-of-Thought Prompting Elicits Reasoning in Large Language Models]. CoT prompting has demonstrated robustness across different annotators, exemplars, and language models, particularly for arithmetic reasoning [source: Chain-of-Thought Prompting Elicits Reasoning in Large Language Models].\\n\\nBeyond CoT, other methods aim to optimize prompts. For instance, LLMs as optimizers (OPRO) require a training set to improve prompts [source: Self-Discover: Large Language Models Self-Compose Reasoning Structures]. Research also suggests that when structures or prompts are optimized from one model, the reasoning structures themselves can retain more performance gains than just the wording of the prompts [source: Self-Discover: Large Language Models Self-Compose Reasoning Structures]. These advancements represent a move from direct prompting, where models directly generate answers without intermediate reasoning, towards more sophisticated methods that elicit and compose reasoning structures [source: Self-Discover: Large Language Models Self-Compose Reasoning Structures].\",\n  \"sources\": [\n    \"Self-Discover: Large Language Models Self-Compose Reasoning Structures\",\n    \"Chain-of-Thought Prompting Elicits Reasoning in Large Language Models\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          ".\",\n  \"sources\": [\n    \"Self-Discover: Large Language Models Self-Compose Reason..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 2,
+      "reasoning": "The output discusses Chain-of-Thought prompting and its benefits, but it does not mention ReAct, Self-Discover's specific mechanism of composing reasoning structures, or the relationship between model size and emergent reasoning abilities.",
+      "missing_claims": [
+        "ReAct extends prompting to interleave reasoning with grounded actions",
+        "Self-Discover allows models to compose task-specific reasoning structures from atomic modules",
+        "emergent reasoning abilities appear to require sufficiently large models"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "How does contextual retrieval work and what were the main results?",
+    "mode": "notes",
+    "output": "```json\n{\n  \"query\": \"How does contextual retrieval work and what were the main results?\",\n  \"mode\": \"notes\",\n  \"key_points\": \"- Contextual Retrieval is a method to improve the retrieval step in RAG.\\n- It utilizes two sub-techniques: Contextual Embeddings and Contextual BM25.\\n- This method can decrease failed retrievals by 49%.\\n- When combined with reranking, it can reduce failed retrievals by 67%.\\n- These improvements lead to better accuracy in retrieval and enhanced performance in downstream tasks.\",\n  \"sources\": [\n    \"Contextual Retrieval\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "```json\n{\n  \"query\": \"How does contextual retrieval work and what were the main ..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 2,
+      "reasoning": "The output mentions that contextual retrieval reduces retrieval failure by 67 percent when combined with reranking (which is similar to BM25), but it fails to mention how context is prepended to chunks or that the approach is compatible with any embedding model.",
+      "missing_claims": [
+        "a short context is prepended to each chunk by prompting Claude to situate the chunk within the document",
+        "the approach is compatible with any embedding model"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "What is the 'lost in the middle' problem and why does it matter for RAG?",
+    "mode": "notes",
+    "output": "```json\n{\n  \"query\": \"What is the 'lost in the middle' problem and why does it matter for RAG?\",\n  \"mode\": \"notes\",\n  \"key_points\": \"- The 'lost in the middle' problem refers to the issue where retrieved information, particularly when it appears in the middle of a long context, can be overlooked or not effectively utilized by the RAG system.\\n- This problem is significant for RAG because it can lead to a degradation in the quality of the generated output if crucial information is missed, impacting the system's ability to answer questions comprehensively or accurately.\",\n  \"sources\": [\n    \"Retrieval-Augmented Generation for Large Language Models: A Survey\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "```json\n{\n  \"query\": \"What is the 'lost in the middle' problem and why does it m..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 3,
+      "reasoning": "The output correctly identifies the 'lost in the middle' problem and its significance for RAG, but it does not elaborate on the specific factors that worsen the problem, such as the number of retrieved documents or the implications for chunk ordering.",
+      "missing_claims": [
+        "the effect worsens as the number of retrieved documents increases",
+        "this has direct implications for how retrieved chunks should be ordered in RAG prompts"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "How does the transformer attention mechanism work?",
+    "mode": "notes",
+    "output": "```json\n{\n  \"query\": \"How does the transformer attention mechanism work?\",\n  \"mode\": \"notes\",\n  \"key_points\": \"- The Transformer model utilizes a multi-head attention mechanism.\\n- This mechanism is employed in three distinct ways within the model.\\n- In encoder-decoder attention layers, queries originate from the previous decoder layer, while keys and values are sourced from the encoder's output. This enables each decoder position to attend to all input sequence positions, mirroring traditional encoder-decoder attention in sequence-to-sequence models.\\n- The Transformer is the first transduction model to exclusively use self-attention for computing input and output representations, foregoing sequence-aligned RNNs or convolutions [source: Attention Is All You Need].\\n- Each encoder layer incorporates a multi-head self-attention mechanism as its first sub-layer [source: Attention Is All You Need].\\n- Multi-head attention is used to counteract the effect of reduced effective resolution caused by averaging attention-weighted positions [source: Attention Is All You Need].\",\n  \"sources\": [\n    \"Attention Is All You Need\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          ".\",\n  \"sources\": [\n    \"Attention Is All You Need\"\n  ]\n}\n```"
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 2,
+      "reasoning": "The output mentions multi-head attention and its use in encoder-decoder attention and self-attention, but it does not explain the core mechanism of attention (weighted sum of values based on query-key dot products) or how multi-head attention works by concatenating parallel attention functions. It also omits positional encoding and the overall encoder-decoder architecture.",
+      "missing_claims": [
+        "attention computes a weighted sum of value vectors where weights come from query-key dot products",
+        "multi-head attention runs multiple attention functions in parallel and concatenates the results",
+        "positional encoding is added to token embeddings to inject sequence order information",
+        "the transformer uses an encoder-decoder architecture connected by cross-attention"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "What are the main patterns Eugene Yan identifies for building reliable LLM systems?",
+    "mode": "notes",
+    "output": "```json\n{\n  \"query\": \"What are the main patterns Eugene Yan identifies for building reliable LLM systems?\",\n  \"mode\": \"notes\",\n  \"key_points\": \"- Eugene Yan's work focuses on patterns for building LLM-based systems and products.\\n- The field of building LLM-based systems and products is still in its early stages.\\n- Yan's write-up is titled \\\"Patterns for Building LLM-based Systems & Products\\\" and was published in July 2023.\",\n  \"sources\": [\n    \"Patterns for Building LLM-based Systems\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "```json\n{\n  \"query\": \"What are the main patterns Eugene Yan identifies for build..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 1,
+      "reasoning": "The output only provides introductory context about Eugene Yan's work and does not address any of the specific claims about LLM system patterns.",
+      "missing_claims": [
+        "evals are the foundation for knowing whether any change to the system is an improvement",
+        "RAG is preferred over fine-tuning when knowledge needs to be current or traceable",
+        "guardrails and defensive UX should be designed to handle model failures gracefully",
+        "caching frequent queries reduces cost and latency in production"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "How does Self-RAG use reflection tokens to control retrieval and generation?",
+    "mode": "notes",
+    "output": "```json\n{\n  \"query\": \"How does Self-RAG use reflection tokens to control retrieval and generation?\",\n  \"mode\": \"notes\",\n  \"key_points\": \"- Self-RAG uses \\\"reflection tokens\\\" to control retrieval and generation, allowing the model to introspect its outputs [source: Retrieval-Augmented Generation for Large Language Models: A Survey].\\n- These reflection tokens include two types: \\\"retrieve\\\" and \\\"critic\\\" [source: Retrieval-Augmented Generation for Large Language Models: A Survey].\\n- The model autonomously decides when to activate retrieval [source: Retrieval-Augmented Generation for Large Language Models: A Survey].\\n- If retrieval is deemed helpful for continued generation, Self-RAG outputs a retrieval token that triggers a retriever model on demand [source: Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection].\\n- After retrieval, Self-RAG processes multiple passages, evaluates their relevance, and generates corresponding outputs [source: Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection].\\n- It then generates critique tokens to evaluate its own output and select the best one [source: Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection].\\n- This approach contrasts with methods that consistently retrieve a fixed number of documents regardless of necessity or do not re-evaluate generation quality [source: Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection].\\n- Self-RAG trains a language model to generate text with these reflection tokens as next token predictions from an expanded vocabulary [source: Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection].\",\n  \"sources\": [\n    \"Retrieval-Augmented Generation for Large Language Models: A Survey\",\n    \"Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          ".\",\n  \"sources\": [\n    \"Retrieval-Augmented Generation for Large Language Models..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 3,
+      "reasoning": "The output mentions \"reflection tokens\" including \"retrieve\" and \"critic\" and explains their function in controlling retrieval and generation. However, it does not mention the specific tokens ISREL, ISSUP, and ISUSE, nor does it explicitly state that the 'Retrieve' token is used to decide whether to invoke retrieval at all, or that ISSUP checks for support from retrieved passages. The claim about skipping retrieval for queries not needing external knowledge is also not directly addressed.",
+      "missing_claims": [
+        "Self-RAG introduces special tokens: Retrieve, ISREL, ISSUP, and ISUSE",
+        "the model uses the Retrieve token to decide whether to invoke retrieval at all",
+        "ISSUP checks whether the generated segment is supported by the retrieved passage",
+        "this allows the model to skip retrieval for queries that do not require external knowledge"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  },
+  {
+    "question": "What practical advice does Chip Huyen give for taking LLM applications to production?",
+    "mode": "notes",
+    "output": "```json\n{\n  \"query\": \"What practical advice does Chip Huyen give for taking LLM applications to production?\",\n  \"mode\": \"notes\",\n  \"key_points\": \"- It is easy to create something impressive with LLMs, but difficult to make it production-ready.\\n- There is a lack of engineering rigor in prompt engineering, which amplifies LLM limitations. This is due to the ambiguous nature of natural language and the early stage of the field.\",\n  \"sources\": [\n    \"Building LLM Applications for Production\"\n  ]\n}\n```",
+    "deterministic": {
+      "json_valid": false,
+      "required_fields": {
+        "passed": false,
+        "missing": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "citation_format": {
+        "passed": false,
+        "uncited": [
+          "```json\n{\n  \"query\": \"What practical advice does Chip Huyen give for taking LLM ..."
+        ]
+      },
+      "no_duplicates": {
+        "passed": false,
+        "duplicated": [
+          "(output is not a valid JSON object)"
+        ]
+      },
+      "all_passed": false
+    },
+    "completeness": {
+      "score": 2,
+      "reasoning": "The output only touches on the difficulty of making LLM applications production-ready and the lack of rigor in prompt engineering, missing the specific challenges, task composability, and evaluation.",
+      "missing_claims": [
+        "the main challenges are hallucination, long context handling, and cost and latency",
+        "task composability helps break complex tasks into steps the model handles reliably",
+        "prompt engineering is the first lever to pull before fine-tuning",
+        "evaluation is necessary but hard because outputs are open-ended and hard to score automatically"
+      ]
+    },
+    "faithfulness_scores": [],
+    "avg_faithfulness": null,
+    "n_claims": 0
+  }
+]
