@@ -64,10 +64,13 @@ Faithfulness is strong — the retrieval layer is pulling relevant content and t
 corpus/             source documents (PDFs + markdown) and sources.yaml manifest
 retrieval/          baseline, contextual, and reranker retrieval strategies
 evals/              deterministic checks, LLM judges, golden dataset, eval runner
+agent/              LangGraph state machine (nodes, graph, state, prompts)
 scripts/            ingest, query, compare retrieval, run evals
 interview_artifacts/ architecture writeups and failure mode analysis
 chroma_db/          persisted vector store (baseline + contextual collections)
 ```
+
+For a detailed technical reference (state schema, node descriptions, design decisions) see [REFERENCE.md](REFERENCE.md).
 
 ---
 

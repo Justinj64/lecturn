@@ -206,7 +206,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 **Goal by end of week:** LangGraph state machine running end-to-end with at least one conditional edge. Lectern produces structured output via the agent, not via a one-shot generation.
 
-### Day 15 — LangGraph setup + state schema
+### ~~Day 15 — LangGraph setup + state schema~~
 
 **Build:**
 - `lectern/agent/state.py`: define `LectionState` as a TypedDict or Pydantic model. Fields: query, mode, plan, retrieved_chunks, draft, citations_verified, low_confidence_claims, final_output
@@ -216,7 +216,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 16 — Core nodes
+### ~~Day 16 — Core nodes~~
 
 **Build:**
 - `lectern/agent/nodes.py` implements:
@@ -230,7 +230,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 17 — Wire up the graph, pick first mode
+### ~~Day 17 — Wire up the graph, pick first mode~~
 
 **Build:**
 - In `graph.py`, connect parse → plan → retrieve → draft as a linear chain in LangGraph
@@ -241,7 +241,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 18 — verify_citations + revise nodes
+### ~~Day 18 — verify_citations + revise nodes~~
 
 **Build:**
 - `verify_citations(state)` — for each claim in the draft, calls `judge_faithfulness` (from Day 12) against the cited chunks. Marks low-confidence claims.
@@ -251,7 +251,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 19 — Conditional edges
+### ~~Day 19 — Conditional edges~~
 
 **Build:**
 - Add conditional edge: after `verify_citations`, if `low_confidence_claims` is non-empty, route to `revise`. Otherwise route to `format` (final node).
@@ -262,7 +262,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 20 — Run agent against golden dataset
+### ~~Day 20 — Run agent against golden dataset~~
 
 **Build:**
 - Modify `scripts/run_evals.py` to use the agent (instead of the basic generation from Day 13)
@@ -273,7 +273,7 @@ Each day has: **what you build**, **acceptance criteria** (when the day is done)
 
 ---
 
-### Day 21 — Writeup: `lectern_agent_design.md`
+### ~~Day 21 — Writeup: `lectern_agent_design.md`~~
 
 **Build:**
 - Document in `interview_artifacts/03_agent_design.md`:
