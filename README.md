@@ -1,17 +1,20 @@
 # Lecturn
 
-A RAG (Retrieval-Augmented Generation) research assistant that answers questions about AI/ML papers and blog posts with **cited, traceable answers**. Built to explore retrieval quality, evaluation strategy, and agent architecture — with measured results at each layer.
+A RAG (Retrieval-Augmented Generation) research assistant that answers questions about AI/ML papers and blog posts with **cited, traceable answers**. Built to explore retrieval quality, evaluation strategy, agent architecture, and production readiness — with measured results at each layer.
 
 ---
 
 ## What It Does
 
 Given a query like *"How does Self-RAG differ from standard RAG?"*, Lecturn:
-1. Retrieves the most relevant chunks from a 19-document corpus (10 papers + 9 blog posts)
-2. Generates a structured JSON answer grounded in those chunks
-3. Cites every factual claim with `[source: title]`
+1. Screens the query for prompt injection before anything else runs
+2. Retrieves the most relevant chunks from a 19-document corpus (10 papers + 9 blog posts)
+3. Plans a section outline tailored to the query intent
+4. Drafts a structured cited answer, then verifies each citation with an LLM judge
+5. Revises the draft if any claims score below the confidence threshold
+6. Validates that every `[source: X]` citation maps to an actually-retrieved source
 
-Three output modes: `comparison`, `lit-review`, `notes`.
+Three output modes: `comparison`, `lit-review`, `structured-notes`.
 
 ---
 
@@ -20,6 +23,8 @@ Three output modes: `comparison`, `lit-review`, `notes`.
 ```
 Query
   │
+  ├── Guardrail: injection check (production/guardrails.py)
+  │
   ▼
 Retrieval layer          retrieval/
   ├── Baseline           cosine similarity over raw chunk embeddings
@@ -27,24 +32,36 @@ Retrieval layer          retrieval/
   └── Reranker           cross-encoder rescoring of top-20 candidates → top-5
   │
   ▼
-Generation               naive RAG: chunks + query → LLM → structured JSON
+Agent layer              agent/
+  ├── parse_query        classify mode (structured-notes / comparison / lit-review)
+  ├── plan_sections      generate section outline for the mode
+  ├── retrieve           fetch top-10 contextual chunks
+  ├── draft              write a cited draft following the plan
+  ├── verify_citations   score each cited claim with LLM-as-judge (faithfulness 0-5)
+  ├── revise             rewrite low-confidence claims (loops back, max 2×)
+  └── format_output      assemble final output + validate citation titles
+  │
+  ▼
+Production layer         production/
+  ├── observability      structured JSONL logs + Langfuse tracing
+  ├── cache              disk cache for LLM calls (SHA-256 keyed JSON files)
+  └── guardrails         injection guard + citation title validator
   │
   ▼
 Eval layer               evals/
-  ├── Deterministic      JSON validity, required fields, citation format, source diversity
+  ├── deterministic      JSON validity, required fields, citation format, source diversity
   ├── LLM-as-judge       faithfulness (per claim) + completeness (vs golden dataset)
-  └── Golden dataset     17 hand-written examples with expected sources + key claims
+  └── golden dataset     17 hand-written examples with expected sources + key claims
 ```
 
-### Baseline scorecard (naive RAG, no agent)
+### Scorecard
 
-| Metric | Score |
-|---|---|
-| Deterministic pass rate | 0% (generation prompt doesn't enforce JSON mode — known fix) |
-| Avg faithfulness | 4.03 / 5 |
-| Avg completeness | 2.24 / 5 |
-
-Faithfulness is strong — the retrieval layer is pulling relevant content and the model stays grounded. Completeness is low — a single top-5 retrieval pass misses key claims for multi-source questions. The agent layer (Week 3) addresses this with iterative retrieval planning.
+| Metric | Naive RAG | Agent |
+|---|---|---|
+| Avg faithfulness (0-5) | 4.03 | — (internal verify→revise loop) |
+| Avg completeness (0-5) | 2.24 | **2.65** (+0.41) |
+| Citation format pass | 0% | 35% |
+| Best retrieval MRR | 0.863 (reranked baseline) | — |
 
 ---
 
@@ -61,16 +78,18 @@ Faithfulness is strong — the retrieval layer is pulling relevant content and t
 ## Project Structure
 
 ```
-corpus/             source documents (PDFs + markdown) and sources.yaml manifest
-retrieval/          baseline, contextual, and reranker retrieval strategies
-evals/              deterministic checks, LLM judges, golden dataset, eval runner
-agent/              LangGraph state machine (nodes, graph, state, prompts)
-scripts/            ingest, query, compare retrieval, run evals
-interview_artifacts/ architecture writeups and failure mode analysis
-chroma_db/          persisted vector store (baseline + contextual collections)
+corpus/                source documents (PDFs + markdown) and sources.yaml manifest
+retrieval/             baseline, contextual, and reranker retrieval strategies
+agent/                 LangGraph state machine (nodes, graph, state, prompts)
+evals/                 deterministic checks, LLM judges, golden dataset, eval runner
+production/            observability, LLM cache, guardrails
+scripts/               ingest, query, compare retrieval, run evals, run agent
+interview_artifacts/   architecture writeups and interview synthesis
+app.py                 Streamlit UI
+logs/                  structured JSONL run logs (gitignored)
+cache/                 disk-cached LLM responses (gitignored)
+chroma_db/             persisted vector store (baseline + contextual collections)
 ```
-
-For a detailed technical reference (state schema, node descriptions, design decisions) see [REFERENCE.md](REFERENCE.md).
 
 ---
 
@@ -82,7 +101,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# Add GEMINI_API_KEY to .env
+# Fill in GEMINI_API_KEY (required)
+# Fill in LANGFUSE_* keys (optional — enables tracing UI)
 ```
 
 ---
@@ -90,7 +110,13 @@ cp .env.example .env
 ## Key Commands
 
 ```bash
-# Query the corpus
+# Streamlit UI (recommended)
+python3 -m streamlit run app.py
+
+# Run the agent from the CLI
+python scripts/run_agent.py
+
+# Query the corpus directly (no agent)
 python scripts/run_query.py "how does contextual retrieval work"
 python scripts/run_query.py --method contextual "how does contextual retrieval work"
 
@@ -98,16 +124,25 @@ python scripts/run_query.py --method contextual "how does contextual retrieval w
 python scripts/compare_retrieval.py
 
 # Run the full eval suite (makes LLM API calls — costs tokens)
-python scripts/run_evals.py
+python scripts/run_evals.py --pipeline both
 
-# Run deterministic checks only (free, no API calls)
+# Deterministic checks only (free, no API calls)
 python -m evals.deterministic
+
+# Inspect the LLM cache
+python -c "from production.cache import cache_stats; print(cache_stats())"
+
+# Clear the LLM cache
+python -c "from production.cache import clear_cache; print(clear_cache(), 'entries removed')"
 ```
 
 ---
 
 ## Design Writeups
 
-- [Retrieval architecture](interview_artifacts/01_retrieval_architecture.md) — corpus, chunking decisions, baseline vs contextual results
-- [Eval strategy](interview_artifacts/02_eval_strategy.md) — why faithfulness is hard, the 10 failure modes, scorecard analysis, production gaps
-- [Failure modes](interview_artifacts/lecturn_failure_modes.md) — 10 failure modes grouped by what eval catches them
+- [Retrieval architecture](interview_artifacts/01_retrieval_architecture.md) — corpus, chunking decisions, four-method comparison, MRR results
+- [Eval strategy](interview_artifacts/02_eval_strategy.md) — why faithfulness is hard, 10 failure modes, scorecard analysis
+- [Agent design](interview_artifacts/03_agent_design.md) — LangGraph state machine, conditional verify→revise loop, agent vs naive RAG scorecard
+- [Production maturity](interview_artifacts/04_production_maturity.md) — observability, caching, guardrails, UI, and what's still missing
+- [Failure modes](interview_artifacts/lecturn_failure_modes.md) — 10 failure modes grouped by what eval layer catches them
+- [Interview synthesis](interview_artifacts/interview_synthesis.md) — prepared answers for 8 common senior LLM engineer questions

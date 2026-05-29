@@ -54,6 +54,10 @@ lecturn/
 │   ├── graph.py            # LangGraph state machine definition + lecturn_graph instance
 │   ├── nodes.py            # All 7 node functions
 │   └── prompts.py          # All LLM prompt strings used by agent nodes
+├── production/
+│   ├── observability.py    # new_run(), end_run(), log_event(), timed_node() — JSONL + Langfuse
+│   ├── cache.py            # get_cached(), set_cached(), cache_stats(), clear_cache()
+│   └── guardrails.py       # check_query() injection guard, validate_citations() title check
 ├── scripts/
 │   ├── ingest_corpus.py    # One-time: load corpus → chunk → store in ChromaDB (baseline)
 │   ├── ingest_contextual.py # One-time: generate context prefixes → store in ChromaDB (contextual)
@@ -66,9 +70,14 @@ lecturn/
 │   ├── 01_retrieval_architecture.md
 │   ├── 02_eval_strategy.md
 │   ├── 03_agent_design.md
+│   ├── 04_production_maturity.md
+│   ├── interview_synthesis.md   # Prepared answers for 8 senior LLM interview questions
 │   └── lecturn_failure_modes.md
+├── app.py                  # Streamlit UI — run with: python3 -m streamlit run app.py
 ├── config.py               # Shared LLM config: MODEL, GEMINI_BASE_URL, get_client()
 ├── ingest.py               # Core ingestion: load_corpus(), chunk_documents()
+├── logs/                   # JSONL run logs — one line per event, gitignored
+├── cache/llm/              # Disk-cached LLM responses (SHA-256 keyed JSON), gitignored
 └── chroma_db/              # Persisted vector store (do not delete)
 ```
 
@@ -104,6 +113,18 @@ python scripts/run_query.py --method contextual "what is contextual retrieval"
 ```bash
 python scripts/ingest_corpus.py       # baseline ChromaDB collection
 python scripts/ingest_contextual.py   # contextual ChromaDB collection (expensive — LLM per chunk)
+```
+
+### Streamlit UI
+```bash
+python3 -m streamlit run app.py
+```
+Use `python3 -m streamlit` (not just `streamlit`) to ensure the venv interpreter is used.
+
+### Inspect or clear the LLM cache
+```bash
+python -c "from production.cache import cache_stats; print(cache_stats())"
+python -c "from production.cache import clear_cache; print(clear_cache(), 'entries removed')"
 ```
 
 ---
@@ -203,12 +224,35 @@ Each node returns **only the fields it changed** — LangGraph merges the dict i
 
 ---
 
-## Week 4 remaining work (Days 22–28)
+## Production layer (`production/`)
 
-- Day 22: `production/observability.py` — structured logging per node
-- Day 23: `production/cache.py` — disk cache for LLM calls
-- Day 24: `production/guardrails.py` — citation validator
-- Day 25: `guardrails.py` — prompt injection check
-- Day 26: `app.py` — Streamlit UI
-- Day 27: Polish READMEs, top-level README
-- Day 28: `interview_artifacts/04_production_maturity.md` + interview synthesis
+### Observability (`observability.py`)
+
+Every agent run emits two outputs in parallel:
+- **`logs/lecturn.jsonl`** — always-on JSONL, one object per event, includes `ts`, `run_id`, `event`, and per-node metrics
+- **Langfuse** — when `LANGFUSE_SECRET_KEY` is set, LLM calls appear as generations grouped under one trace per run
+
+Key functions:
+
+| Function | Purpose |
+|---|---|
+| `new_run(query)` | Generate run_id, write `run.start`, return run_id |
+| `end_run(output)` | Write `run.end`, flush Langfuse |
+| `log_event(event, data)` | Write one structured entry to stdout + JSONL |
+| `timed_node(name)` | Context manager — yields `meta` dict, logs `.start` / `.end` with `duration_s` |
+
+`config.py` uses `langfuse.openai.OpenAI` when keys are present, so every `_llm()` call is auto-traced with no extra code at the call site.
+
+### Cache (`cache.py`)
+
+Disk cache for LLM responses. Cache key = SHA-256 of (model + messages + temperature + max_tokens). Entries stored as individual JSON files under `cache/llm/`.
+
+Already wired into `_llm()` in `nodes.py` — check before call, write after miss. Makes the eval harness cheap to re-run; second pass on the same queries is near-instant.
+
+**Important:** cache is only safe at `temperature=0`. Clear it after changing prompts in `prompts.py`.
+
+### Guardrails (`guardrails.py`)
+
+**`check_query(query)`** — runs before the graph in `run_agent.py` and `app.py`. Eight regex patterns covering instruction overrides, role switches, prompt extraction, template/script injection. Queries over 1,000 chars are also rejected. Returns `{"safe": bool, "reason": str | None}`.
+
+**`validate_citations(draft, retrieved_chunks)`** — runs inside `format_output`. Extracts every `[source: X]` name, checks it against retrieved chunk titles via normalized substring match. Returns `{"pass": bool, "valid": [...], "invalid": [...]}`. Invalid citations appear as a warning block in the final output.
