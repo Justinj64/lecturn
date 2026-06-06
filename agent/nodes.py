@@ -109,7 +109,7 @@ def draft(state: LecturnState) -> dict:
     """
     with timed_node("draft") as meta:
         chunks_block = "\n\n".join(
-            f"[Chunk {i+1}: {c['title']}]\n{c['text']}"
+            f"[Source: {c['title']}]\n{c['text']}"
             for i, c in enumerate(state["retrieved_chunks"])
         )
         sections_str = "\n".join(f"- {s}" for s in state["plan"])

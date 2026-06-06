@@ -67,7 +67,12 @@ def generate_answer(question: str, mode: str, chunks) -> str:
             {"role": "user",   "content": user_message},
         ],
     )
-    return response.choices[0].message.content
+    raw = response.choices[0].message.content.strip()
+    # Model sometimes wraps JSON in ```json fences despite instructions — strip them.
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+    return raw.strip()
 
 
 # ---------------------------------------------------------------------------
@@ -390,7 +395,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pipeline",
         choices=["naive", "agent", "both"],
-        default="both",
+        default="agent",
         help="Which pipeline to evaluate (default: both)",
     )
     args = parser.parse_args()

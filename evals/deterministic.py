@@ -38,6 +38,9 @@ MODE_SCHEMAS: dict[str, dict] = {
 # metadata (mode, source names, query, etc.).
 _CONTENT_MIN_LEN = 60
 
+# Top-level keys that are metadata, not claims — skip citation checks on these.
+_METADATA_KEYS = {"query", "mode", "sources"}
+
 
 def _extract_content_strings(output: str) -> list[str]:
     """
@@ -46,24 +49,28 @@ def _extract_content_strings(output: str) -> list[str]:
 
     Short strings like "default", "Lewis 2020", or a field name are
     excluded. Only strings longer than _CONTENT_MIN_LEN are returned.
+    Keys in _METADATA_KEYS (query, mode, sources) are skipped entirely
+    — they are structural metadata, not claims.
 
     Falls back to [output] if the string is not valid JSON and is long
     enough to be a content string.
     """
-    def _collect(value: object, parts: list[str]) -> None:
+    def _collect(value: object, parts: list[str], key: str | None = None) -> None:
+        if key in _METADATA_KEYS:
+            return
         if isinstance(value, str) and len(value) > _CONTENT_MIN_LEN:
             parts.append(value)
         elif isinstance(value, dict):
-            for v in value.values():
-                _collect(v, parts)
+            for k, v in value.items():
+                _collect(v, parts, key=k)
         elif isinstance(value, list):
             for item in value:
-                _collect(item, parts)
+                _collect(item, parts, key=key)
 
     try:
         parsed = json.loads(output)
         parts: list[str] = []
-        _collect(parsed, parts)
+        _collect(parsed, parts, key=None)
         return parts
     except (json.JSONDecodeError, TypeError):
         return [output] if len(output) > _CONTENT_MIN_LEN else []
